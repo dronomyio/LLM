@@ -1,0 +1,14 @@
+//inserting data 
+Step 7: If Using Docker
+#If MySQL is running in Docker:
+
+#Check running containers:
+#docker ps
+#Verify the MySQL container is running and its ports are correctly mapped:
+#CONTAINER ID   IMAGE           COMMAND                  PORTS                    NAMES
+#60605b21e787   mysql:latest    "docker-entrypoint.s…"   0.0.0.0:3306->3306/tcp   mysql-container
+#If no container is running, start one:
+#docker run --name mysql-container -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root mysql:latest
+#Update your Python script to point to the Docker container's IP if localhost doesn't work:
+##
+#DB_HOST = "127.0.0.1"
