@@ -384,8 +384,7 @@ config.get("num_gpus", 1)),
                "type": "bandwidth_utilization",
                "severity": "high" if comm.get("utilization", 1) < 0.5 else "medium",
                "description": "Low bandwidth utilization",
-               "details": f"Network bandwidth utilization is only {comm.get('utilization', 0)*100:.1f}% of 
-theoretical maximum",
+               "details": f"Network bandwidth utilization is only {comm.get('utilization', 0)*100:.1f}% of theoretical maximum",
                "utilization": comm.get("utilization", 0)
            })
 
@@ -395,8 +394,7 @@ theoretical maximum",
                "type": "load_imbalance",
                "severity": "high" if comp.get("load_imbalance", 0) > 0.5 else "medium",
                "description": "High expert load imbalance",
-               "details": f"Expert load varies by {comp.get('load_imbalance', 0)*100:.1f}%, causing 
-underutilization of compute resources",
+               "details": f"Expert load varies by {comp.get('load_imbalance', 0)*100:.1f}%, causing underutilization of compute resources",
                "imbalance": comp.get("load_imbalance", 0)
            })
 
@@ -415,8 +413,7 @@ underutilization of compute resources",
                "type": "memory",
                "severity": "low",
                "description": "Low memory utilization",
-               "details": f"Memory usage ({mem.get('total_memory_gb', 0):.1f} GB) is significantly below GPU 
-capacity",
+               "details": f"Memory usage ({mem.get('total_memory_gb', 0):.1f} GB) is significantly below GPU capacity",
                "efficiency": mem.get("memory_efficiency", 0)
            })
 
@@ -426,8 +423,7 @@ capacity",
                "type": "internode_communication",
                "severity": "high",
                "description": "High internode communication ratio",
-               "details": f"{comm.get('internode_ratio', 0)*100:.1f}% of communication is over slower RDMA 
-links",
+               "details": f"{comm.get('internode_ratio', 0)*100:.1f}% of communication is over slower RDMA links",
                "ratio": comm.get("internode_ratio", 0)
            })
 
