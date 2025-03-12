@@ -1538,8 +1538,7 @@ internode.
 
       # GPU count recommendation
       gpu_util = df.groupby("gpus_involved")["utilization"].mean()
-      best_small_config = gpu_util.iloc[:len(gpu_util)//2].idxmax() if len(gpu_util) > 1 else
-gpu_util.idxmax()
+      best_small_config = gpu_util.iloc[:len(gpu_util)//2].idxmax() if len(gpu_util) > 1 else gpu_util.idxmax()
 
       st.markdown('<div class="success-box">', unsafe_allow_html=True)
       st.markdown("""
