@@ -1614,10 +1614,8 @@ unsafe_allow_html=True)
        mem_df = pd.DataFrame([
            {"Metric": "Expert Parameters", "Value": format_number(mem["expert_params"])},
            {"Metric": "Expert Memory", "Value": format_number(mem["expert_memory"]) + " bytes"},
-           {"Metric": "Expert Memory per GPU", "Value": format_number(mem["expert_memory_per_gpu"]) + " 
-bytes"},
-           {"Metric": "Activation Memory per Token", "Value":
-format_number(mem["activation_memory_per_token"]) + " bytes"},
+           {"Metric": "Expert Memory per GPU", "Value": format_number(mem["expert_memory_per_gpu"]) + " bytes"},
+           {"Metric": "Activation Memory per Token", "Value": format_number(mem["activation_memory_per_token"]) + " bytes"},
            {"Metric": "Dispatch Buffer Size", "Value": format_number(mem["dispatch_buffer"]) + " bytes"},
            {"Metric": "Parameter Memory", "Value": f"{mem['total_memory_params_gb']:.2f} GB"},
            {"Metric": "Activation Memory", "Value": f"{mem['total_memory_activations_gb']:.2f} GB"},
@@ -1633,8 +1631,7 @@ format_number(mem["activation_memory_per_token"]) + " bytes"},
 
        if mem['memory_efficiency'] > 0.9:
            st.markdown('<div class="warning-box">', unsafe_allow_html=True)
-           st.markdown("""
-           **High Memory Utilization**
+           st.markdown("""**High Memory Utilization**
            
            Your model is using {:.1f}% of available GPU memory. Consider:
            
