@@ -1781,11 +1781,9 @@ unsafe_allow_html=True)
            # Calculate efficiency metrics
            theoretical_min_cv = 0.0  # perfect balance
            estimated_cv = comp["load_imbalance"]
-           random_cv = np.sqrt((num_experts - top_k) / (tokens_per_batch * top_k)) if tokens_per_batch * top_k
-> 0 else 0
+           random_cv = np.sqrt((num_experts - top_k) / (tokens_per_batch * top_k)) if tokens_per_batch * top_k > 0 else 0
 
-           efficiency = max(0, (random_cv - estimated_cv) / (random_cv - theoretical_min_cv)) if random_cv >
-theoretical_min_cv else 1.0
+           efficiency = max(0, (random_cv - estimated_cv) / (random_cv - theoretical_min_cv)) if random_cv > theoretical_min_cv else 1.0
 
            st.markdown('<div class="info-box">', unsafe_allow_html=True)
            st.markdown(f"""
