@@ -262,8 +262,7 @@ def identify_bottlenecks(df):
           "type": "low_utilization",
           "severity": "high",
           "description": f"Low overall bandwidth utilization ({avg_util:.1f}%)",
-          "details": "Bandwidth utilization is significantly below potential, indicating communication 
-inefficiency"
+          "details": "Bandwidth utilization is significantly below potential, indicating communication inefficiency"
       })
 
   # Check for dispatch vs combine imbalance
