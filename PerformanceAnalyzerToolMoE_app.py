@@ -364,8 +364,7 @@ config.get("num_gpus", 1)),
                    "type": "communication",
                    "severity": "high" if comm_time > comp_time * 1.2 else "medium",
                    "description": "Communication-bound performance",
-                   "details": f"Communication time ({comm_time:.2f}ms) is significantly higher than 
-computation time ({comp_time:.2f}ms)",
+                   "details": f"Communication time ({comm_time:.2f}ms) is significantly higher than computation time ({comp_time:.2f}ms)",
                    "ratio": comm_time / comp_time if comp_time > 0 else float('inf')
                })
 
