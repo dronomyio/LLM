@@ -774,8 +774,7 @@ with st.sidebar:
 
     st.session_state.topk = st.slider("Top-k Experts", 1, 4, 2)
     st.session_state.routing_skew = st.slider("Routing Skew", 0.0, 2.0, 0.5,
-                                             help="Higher values make some tokens more likely to be routed to 
-the same experts")
+                                             help="Higher values make some tokens more likely to be routed to the same experts")
 
     # Initialize button
     if st.button("Initialize System"):
