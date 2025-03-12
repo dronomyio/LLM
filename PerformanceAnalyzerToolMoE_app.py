@@ -459,8 +459,7 @@ config.get("num_gpus", 1)),
                        "Tune DeepEP buffer sizes for your specific model dimensions",
                        "Set appropriate SM allocation for communication kernels",
                        "Implement background communication-computation overlapping",
-                       "Configure proper network settings (NVSHMEM_IB_ENABLE_IBGDA=1, 
-NVSHMEM_IBGDA_NIC_HANDLER=gpu)",
+                       "Configure proper network settings (NVSHMEM_IB_ENABLE_IBGDA=1, NVSHMEM_IBGDA_NIC_HANDLER=gpu)",
                        "Use async_finish=True with custom event management"
                    ]
                })
