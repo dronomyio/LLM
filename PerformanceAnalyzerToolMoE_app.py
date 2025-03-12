@@ -374,8 +374,7 @@ config.get("num_gpus", 1)),
                    "type": "computation",
                    "severity": "medium",
                    "description": "Computation-bound performance",
-                   "details": f"Computation time ({comp_time:.2f}ms) is significantly higher than 
-communication time ({comm_time:.2f}ms)",
+                   "details": f"Computation time ({comp_time:.2f}ms) is significantly higher than communication time ({comm_time:.2f}ms)",
                    "ratio": comp_time / comm_time if comm_time > 0 else float('inf')
                })
 
