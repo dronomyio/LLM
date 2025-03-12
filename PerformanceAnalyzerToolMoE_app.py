@@ -1749,8 +1749,7 @@ unsafe_allow_html=True)
                "total_active_experts": comp["total_active_experts"]
            }
 
-           tokens_per_gpu = st.session_state.model_config["batch_size"] *
-st.session_state.model_config["seq_length"] / st.session_state.model_config["num_gpus"]
+           tokens_per_gpu = st.session_state.model_config["batch_size"] * st.session_state.model_config["seq_length"] / st.session_state.model_config["num_gpus"]
 
            # Calculate coefficient of variation
            if expert_loads:
