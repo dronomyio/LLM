@@ -25,6 +25,10 @@ experts_per_gpu = st.sidebar.slider("Experts per GPU", 1, 8, 2)
 tokens_per_gpu = st.sidebar.slider("Tokens per GPU", 4, 32, 16, 4)
 topk = st.sidebar.slider("Top-k Experts", 1, 4, 2)
 
+#1. Initialize the animation container earlier:
+  # Add this near the beginning of the "Complete flow" section
+animation_container = st.empty()
+
 comm_type = st.sidebar.radio(
   "Communication Type",
   ["Intranode (NVLink)", "Internode (RDMA)", "Mixed"],
@@ -371,27 +375,54 @@ with col1:
               time.sleep(0.05 / animation_speed)
 
           st.session_state.animating = False
+      # else:
+      #     # Static visualization with both operations
+      #     # Dispatch traces (halfway)
+      #     dispatch_traces = visualize_token_routing(
+      #         token_data, gpu_positions, expert_positions,
+      #         0.5, "Dispatch"
+      #     )
+
+      #     # Combine traces (starting)
+      #     combine_traces = visualize_token_routing(
+      #         token_data, gpu_positions, expert_positions,
+      #         0.1, "Combine"
+      #     )
+
+      #     for trace in dispatch_traces + combine_traces:
+      #         system_fig.add_trace(trace)
+
+      #     st.plotly_chart(system_fig, use_container_width=True)
+      #2. Ensure the static view doesn't conflict with animation:
+      # Replace the else block in the animation section:
       else:
           # Static visualization with both operations
+          static_fig, _, _ = create_system_visualization(
+              num_gpus, experts_per_gpu, comm_type
+          )
+    
           # Dispatch traces (halfway)
           dispatch_traces = visualize_token_routing(
               token_data, gpu_positions, expert_positions,
               0.5, "Dispatch"
           )
-
+    
           # Combine traces (starting)
           combine_traces = visualize_token_routing(
               token_data, gpu_positions, expert_positions,
               0.1, "Combine"
           )
-
+    
           for trace in dispatch_traces + combine_traces:
-              system_fig.add_trace(trace)
+              static_fig.add_trace(trace)
+    
+          animation_container.plotly_chart(static_fig, use_container_width=True)
 
-          st.plotly_chart(system_fig, use_container_width=True)
+  #if operation != "Complete Flow" or not st.session_state.animating:
+   #   st.plotly_chart(system_fig, use_container_width=True)
+  if (operation != "Complete Flow" or not st.session_state.animating) and not animation_container.empty:
+      animation_container.plotly_chart(system_fig, use_container_width=True)
 
-  if operation != "Complete Flow" or not st.session_state.animating:
-      st.plotly_chart(system_fig, use_container_width=True)
 
 with col2:
   # Display token routing information
