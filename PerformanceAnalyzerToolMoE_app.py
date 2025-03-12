@@ -171,8 +171,7 @@ config.get("num_gpus", 1)),
        internode_connections = total_possible_connections - intranode_connections
 
        # Estimate communication ratios (very simplified model)
-       intranode_ratio = intranode_connections / total_possible_connections if total_possible_connections > 0
-else 0
+       intranode_ratio = intranode_connections / total_possible_connections if total_possible_connections > 0 else 0
        internode_ratio = 1 - intranode_ratio
 
        # Convert to GB for bandwidth calculation
