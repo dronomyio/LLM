@@ -258,8 +258,7 @@ config.get("num_gpus", 1)),
        actual_compute_time = None
        if profile and "computation_time" in profile:
            actual_compute_time = profile["computation_time"]
-           compute_efficiency = total_compute_time_balanced / actual_compute_time if actual_compute_time > 0
-else 0
+           compute_efficiency = total_compute_time_balanced / actual_compute_time if actual_compute_time > 0 else 0
        else:
            compute_efficiency = 0.8  # Assumed efficiency
            actual_compute_time = total_compute_time_balanced / compute_efficiency
