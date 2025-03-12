@@ -1653,7 +1653,7 @@ unsafe_allow_html=True)
            2. Using FP8 precision for dispatch to reduce buffer requirements
            3. Implementing more efficient buffer reuse strategies
            """.format(mem['total_memory_buffers_gb'] / mem['total_memory_gb'] * 100))
-           #st.markdown('</div>', unsafe_allow_html
+           st.markdown('</div>', unsafe_allow_html=true)
 
 
 
