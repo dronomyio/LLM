@@ -1206,8 +1206,7 @@ elif st.session_state.active_tab == "topology":
           st.markdown('<div class="metric-card">', unsafe_allow_html=True)
           st.markdown("### Internode Communication")
           st.markdown("**Connection Type:** {}".format(st.session_state.system_info['internode_conn']))
-          st.markdown("**Theoretical Bandwidth:** ~{} 
-GB/s".format(st.session_state.system_info['rdma_bandwidth']))
+          st.markdown("**Theoretical Bandwidth:** ~{} GB/s".format(st.session_state.system_info['rdma_bandwidth']))
 
           if "InfiniBand" in st.session_state.system_info['internode_conn']:
               st.markdown("**RDMA Technology:** InfiniBand (optimal for DeepEP)")
