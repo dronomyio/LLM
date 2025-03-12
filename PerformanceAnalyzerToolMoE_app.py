@@ -1805,24 +1805,21 @@ theoretical_min_cv else 1.0
        strategies = [
            {
                "name": "Token Choice with Auxiliary Loss",
-               "description": "Adds an auxiliary load balancing loss during training to encourage uniform 
-expert usage",
+               "description": "Adds an auxiliary load balancing loss during training to encourage uniform expert usage",
                "efficiency": 0.85,
                "complexity": "Medium",
                "training_impact": "Minor increase in training time"
            },
            {
                "name": "Expert Choice Routing",
-               "description": "Experts choose which tokens they want to process rather than tokens choosing 
-experts",
+               "description": "Experts choose which tokens they want to process rather than tokens choosing experts",
                "efficiency": 0.95,
                "complexity": "Medium",
                "training_impact": "Different convergence characteristics"
            },
            {
                "name": "Balanced Assignment",
-               "description": "Use Hungarian algorithm or other assignment methods to ensure balanced expert 
-usage",
+               "description": "Use Hungarian algorithm or other assignment methods to ensure balanced expert usage",
                "efficiency": 0.99,
                "complexity": "High",
                "training_impact": "Significant computation overhead"
@@ -1908,8 +1905,7 @@ unsafe_allow_html=True)
 
            # Display medium priority recommendations
            if medium_priority:
-               st.markdown('<h3 class="subsection-header">Medium Priority Optimizations</h3>',
-unsafe_allow_html=True)
+               st.markdown('<h3 class="subsection-header">Medium Priority Optimizations</h3>',unsafe_allow_html=True)
 
                for i, rec in enumerate(medium_priority):
                    st.markdown('<div class="warning-box">', unsafe_allow_html=True)
@@ -1921,8 +1917,7 @@ unsafe_allow_html=True)
 
            # Display low priority recommendations
            if low_priority:
-               st.markdown('<h3 class="subsection-header">Additional Optimizations</h3>',
-unsafe_allow_html=True)
+               st.markdown('<h3 class="subsection-header">Additional Optimizations</h3>',unsafe_allow_html=True)
 
                for i, rec in enumerate(low_priority):
                    st.markdown('<div class="info-box">', unsafe_allow_html=True)
