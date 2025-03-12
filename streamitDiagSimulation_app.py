@@ -1016,8 +1016,7 @@ if st.session_state.active_tab == "log_analysis":
           else:
               st.markdown('<div class="success-box">', unsafe_allow_html=True)
               st.markdown("**No significant bottlenecks detected**")
-              st.markdown("The communication performance appears to be efficient based on the analyzed 
-metrics.")
+              st.markdown("The communication performance appears to be efficient based on the analyzed metrics.")
               st.markdown('</div>', unsafe_allow_html=True)
 
 # Communication Benchmark Tab
