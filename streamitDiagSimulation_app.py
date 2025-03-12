@@ -133,8 +133,8 @@ with st.sidebar:
       if intranode_conn == "NVLink":
           nvlink_gen = st.selectbox("NVLink Generation", ["NVLink 3.0", "NVLink 4.0", "NVLink 5.0"])
 
-      internode_conn = st.selectbox("Internode Connection", ["InfiniBand HDR", "InfiniBand NDR", "InfiniBand 
-EDR", "RoCE", "Other"])
+      internode_conn = st.selectbox("Internode Connection",
+                               ["InfiniBand HDR", "InfiniBand NDR", "InfiniBand EDR", "RoCE", "Other"])
 
       if internode_conn == "Other":
           internode_conn = st.text_input("Specify Connection Type")
