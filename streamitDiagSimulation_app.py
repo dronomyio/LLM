@@ -831,6 +831,10 @@ if st.session_state.active_tab == "log_analysis":
           }).reset_index()
 
           latency_by_tokens.columns = ["operation", "tokens_bin", "duration_ms"]
+        
+          # Add this line to fix the error:
+          latency_by_tokens["tokens_bin"] = latency_by_tokens["tokens_bin"].astype(str)
+          
 
           token_latency_fig = px.bar(
               latency_by_tokens,
@@ -867,6 +871,7 @@ if st.session_state.active_tab == "log_analysis":
               util_by_gpu = df.groupby(["operation", "gpus_involved"]).agg({
                   "utilization": "mean"
               }).reset_index()
+             
 
               util_gpu_fig = px.line(
                   util_by_gpu,
