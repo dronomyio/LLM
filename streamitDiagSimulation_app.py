@@ -1273,8 +1273,7 @@ elif st.session_state.active_tab == "recommendations":
       else:
           st.markdown('<div class="success-box">', unsafe_allow_html=True)
           st.markdown("**Your system appears to be well-optimized!**")
-          st.markdown("Based on the analyzed data, no significant optimization opportunities were 
-identified.")
+          st.markdown("Based on the analyzed data, no significant optimization opportunities were identified.")
           st.markdown('</div>', unsafe_allow_html=True)
 
       # Code snippet examples
