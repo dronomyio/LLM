@@ -172,8 +172,7 @@ def parse_profiling_logs(logs):
   }
 
   # Regular expressions for log pattern matching
-  dispatch_pattern =
-r"DISPATCH.*tokens=(\d+).*hidden=(\d+).*gpus=(\d+).*time=(\d+\.\d+)ms.*BW=(\d+\.\d+)GB/s"
+  dispatch_pattern = r"DISPATCH.*tokens=(\d+).*hidden=(\d+).*gpus=(\d+).*time=(\d+\.\d+)ms.*BW=(\d+\.\d+)GB/s"
   combine_pattern = r"COMBINE.*tokens=(\d+).*hidden=(\d+).*gpus=(\d+).*time=(\d+\.\d+)ms.*BW=(\d+\.\d+)GB/s"
 
   lines = logs.strip().split('\n')
