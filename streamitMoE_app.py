@@ -1,8 +1,11 @@
 import streamlit as st
 import plotly.graph_objects as go
+import plotly.express as px
 import numpy as np
 import pandas as pd
+import time
 
+# Page setup
 st.set_page_config(page_title="MoE Communication Visualizer", layout="wide")
 
 # Define colors for different components
@@ -15,38 +18,47 @@ COLORS = {
   "token": "rgba(100, 149, 237, 0.7)"     # Cornflower Blue
 }
 
+# Title and description
 st.title("DeepEP: MoE Communication Pattern Visualizer")
+st.markdown("""
+This visualizer demonstrates how tokens are routed between GPUs and experts in Mixture-of-Experts models
+using DeepEP's optimized communication patterns.
+""")
 
-# Create sidebar controls
-st.sidebar.header("System Configuration")
+# Sidebar controls
+with st.sidebar:
+  st.header("System Configuration")
 
-num_gpus = st.sidebar.slider("Number of GPUs", 2, 16, 4, 2)
-experts_per_gpu = st.sidebar.slider("Experts per GPU", 1, 8, 2)
-tokens_per_gpu = st.sidebar.slider("Tokens per GPU", 4, 32, 16, 4)
-topk = st.sidebar.slider("Top-k Experts", 1, 4, 2)
+  num_gpus = st.slider("Number of GPUs", 2, 16, 4, 2)
+  experts_per_gpu = st.slider("Experts per GPU", 1, 8, 2)
+  tokens_per_gpu = st.slider("Tokens per GPU", 4, 32, 16, 4)
+  topk = st.slider("Top-k Experts", 1, 4, 2)
 
-#1. Initialize the animation container earlier:
-  # Add this near the beginning of the "Complete flow" section
-animation_container = st.empty()
+  comm_type = st.radio(
+      "Communication Type",
+      ["Intranode (NVLink)", "Internode (RDMA)", "Mixed"],
+      index=2
+  )
 
-comm_type = st.sidebar.radio(
-  "Communication Type",
-  ["Intranode (NVLink)", "Internode (RDMA)", "Mixed"],
-  index=2
-)
+  operation = st.radio(
+      "Operation",
+      ["Dispatch", "Combine", "Complete Flow"],
+      index=0
+  )
 
-operation = st.sidebar.radio(
-  "Operation",
-  ["Dispatch", "Combine", "Complete Flow"],
-  index=0
-)
+  animation_speed = st.slider("Animation Speed", 0.1, 2.0, 1.0, 0.1)
 
-animation_speed = st.sidebar.slider("Animation Speed", 0.1, 2.0, 1.0, 0.1)
+  st.markdown("---")
+  st.markdown("""
+  **About:**
+  
+  This app visualizes how DeepEP optimizes token routing in 
+  Mixture-of-Experts models for efficient expert parallelism.
+  """)
 
-# Function to create GPU system visualization
-def create_system_visualization(num_gpus, experts_per_gpu, comm_type):
-  fig = go.Figure()
-
+# Helper functions
+def create_system_layout(num_gpus, experts_per_gpu):
+  """Calculate GPU and expert positions based on system size"""
   # Define node positions
   nodes_per_row = min(4, num_gpus)
   rows = (num_gpus + nodes_per_row - 1) // nodes_per_row
@@ -55,7 +67,7 @@ def create_system_visualization(num_gpus, experts_per_gpu, comm_type):
   gpu_positions = {}
   expert_positions = {}
 
-  # Create GPUs and experts
+  # Calculate positions
   for i in range(num_gpus):
       row = i // nodes_per_row
       col = i % nodes_per_row
@@ -65,7 +77,22 @@ def create_system_visualization(num_gpus, experts_per_gpu, comm_type):
       y = row * 6
       gpu_positions[i] = (x, y)
 
-      # Add GPU node
+      # Expert positions for this GPU
+      for j in range(experts_per_gpu):
+          expert_x = x + (j - (experts_per_gpu-1)/2) * 0.8
+          expert_y = y - 1.5
+          expert_id = i * experts_per_gpu + j
+          expert_positions[expert_id] = (expert_x, expert_y)
+
+  return gpu_positions, expert_positions, nodes_per_row, rows
+
+def create_system_visualization(gpu_positions, expert_positions, experts_per_gpu, comm_type, nodes_per_row, 
+rows):
+  """Create a fresh visualization of the system architecture"""
+  fig = go.Figure()
+
+  # Add GPU nodes
+  for i, (x, y) in gpu_positions.items():
       fig.add_trace(go.Scatter(
           x=[x], y=[y],
           mode='markers+text',
@@ -76,37 +103,36 @@ def create_system_visualization(num_gpus, experts_per_gpu, comm_type):
           hoverinfo='name'
       ))
 
-      # Add experts for this GPU
-      for j in range(experts_per_gpu):
-          expert_x = x + (j - (experts_per_gpu-1)/2) * 0.8
-          expert_y = y - 1.5
-          expert_id = i * experts_per_gpu + j
-          expert_positions[expert_id] = (expert_x, expert_y)
+  # Add expert nodes
+  for expert_id, (expert_x, expert_y) in expert_positions.items():
+      gpu_id = expert_id // experts_per_gpu
+      x, y = gpu_positions[gpu_id]
 
-          fig.add_trace(go.Scatter(
-              x=[expert_x], y=[expert_y],
-              mode='markers+text',
-              marker=dict(size=20, color=COLORS["expert"]),
-              text=[f'E{expert_id}'],
-              textposition="middle center",
-              name=f'Expert {expert_id}',
-              hoverinfo='name'
-          ))
+      # Add expert
+      fig.add_trace(go.Scatter(
+          x=[expert_x], y=[expert_y],
+          mode='markers+text',
+          marker=dict(size=20, color=COLORS["expert"]),
+          text=[f'E{expert_id}'],
+          textposition="middle center",
+          name=f'Expert {expert_id}',
+          hoverinfo='name'
+      ))
 
-          # Connect expert to its GPU
-          fig.add_trace(go.Scatter(
-              x=[expert_x, x], y=[expert_y, y],
-              mode='lines',
-              line=dict(width=2, color='rgba(150, 150, 150, 0.5)'),
-              hoverinfo='none',
-              showlegend=False
-          ))
+      # Connect expert to its GPU
+      fig.add_trace(go.Scatter(
+          x=[expert_x, x], y=[expert_y, y],
+          mode='lines',
+          line=dict(width=2, color='rgba(150, 150, 150, 0.5)'),
+          hoverinfo='none',
+          showlegend=False
+      ))
 
   # Add communication links
   if comm_type in ["Intranode (NVLink)", "Mixed"]:
       # Add NVLink connections within rows
       for row in range(rows):
-          gpus_in_row = min(nodes_per_row, num_gpus - row * nodes_per_row)
+          gpus_in_row = min(nodes_per_row, len(gpu_positions) - row * nodes_per_row)
           for i in range(gpus_in_row):
               for j in range(i+1, gpus_in_row):
                   gpu1 = row * nodes_per_row + i
@@ -125,9 +151,9 @@ def create_system_visualization(num_gpus, experts_per_gpu, comm_type):
 
   if comm_type in ["Internode (RDMA)", "Mixed"]:
       # Add RDMA connections between rows
-      for i in range(min(nodes_per_row, num_gpus)):
+      for i in range(min(nodes_per_row, len(gpu_positions))):
           for row in range(1, rows):
-              if row * nodes_per_row + i < num_gpus:
+              if row * nodes_per_row + i < len(gpu_positions):
                   gpu1 = i
                   gpu2 = row * nodes_per_row + i
                   x1, y1 = gpu_positions[gpu1]
@@ -142,20 +168,20 @@ def create_system_visualization(num_gpus, experts_per_gpu, comm_type):
                       showlegend=(i == 0 and row == 1)
                   ))
 
-  # Layout settings
+  # Set layout
   fig.update_layout(
-      title="MoE System Architecture",
       showlegend=True,
       hovermode='closest',
       xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-2, (nodes_per_row-1)*4+2]),
       yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-2, (rows-1)*6+2]),
-      height=600
+      height=600,
+      margin=dict(l=20, r=20, t=20, b=20)
   )
 
-  return fig, gpu_positions, expert_positions
+  return fig
 
-# Generate token data
 def generate_token_data(num_gpus, tokens_per_gpu, experts_per_gpu, topk):
+  """Generate token data with expert assignments"""
   token_data = []
   num_tokens = num_gpus * tokens_per_gpu
   num_experts = num_gpus * experts_per_gpu
@@ -176,20 +202,31 @@ def generate_token_data(num_gpus, tokens_per_gpu, experts_per_gpu, topk):
 
   return token_data
 
-# Visualize token routing for dispatch or combine
-def visualize_token_routing(token_data, gpu_positions, expert_positions, progress, operation_type):
-  traces = []
+def get_token_positions(token_data, gpu_positions, tokens_per_gpu):
+  """Calculate initial token positions around their source GPUs"""
+  token_positions = {}
 
-  # For each token in the data
   for i, token in enumerate(token_data):
       source_gpu = token['source_gpu']
       source_x, source_y = gpu_positions[source_gpu]
 
-      # Calculate initial position (distributed around the GPU)
+      # Distribute tokens around the GPU
       angle = 2 * np.pi * (i % tokens_per_gpu) / tokens_per_gpu
       radius = 1.0
       token_x = source_x + radius * np.cos(angle)
       token_y = source_y + radius * np.sin(angle)
+
+      token_positions[i] = (token_x, token_y)
+
+  return token_positions
+
+def create_token_traces(token_data, token_positions, expert_positions, progress, operation_type):
+  """Create visualization traces for token routing"""
+  traces = []
+
+  # For each token in the data
+  for i, token in enumerate(token_data):
+      token_x, token_y = token_positions[i]
 
       # For each assigned expert
       for e_idx, expert_id in enumerate(token['assigned_experts']):
@@ -237,8 +274,8 @@ def visualize_token_routing(token_data, gpu_positions, expert_positions, progres
 
   return traces
 
-# Create performance metrics visualization
 def create_performance_metrics(num_gpus, experts_per_gpu, tokens_per_gpu, topk, comm_type):
+  """Create performance metrics visualization"""
   # Theoretical bandwidth values
   nvlink_bw = 150  # GB/s
   rdma_bw = 50     # GB/s
@@ -263,237 +300,278 @@ def create_performance_metrics(num_gpus, experts_per_gpu, tokens_per_gpu, topk, 
   dispatch_latency = 1000 * total_tokens * topk * token_size_bytes / (dispatch_bw * 1e9)
   combine_latency = 1000 * total_tokens * topk * token_size_bytes / (combine_bw * 1e9)
 
-  # Create figure
-  fig = go.Figure()
+  # Create metrics dataframe
+  metrics_df = pd.DataFrame({
+      'Operation': ['Dispatch', 'Combine'],
+      'Bandwidth (GB/s)': [dispatch_bw, combine_bw],
+      'Latency (μs)': [dispatch_latency, combine_latency]
+  })
 
-  # Add bandwidth bars
-  fig.add_trace(go.Bar(
-      x=['Dispatch', 'Combine'],
-      y=[dispatch_bw, combine_bw],
-      text=[f"{dispatch_bw:.1f} GB/s", f"{combine_bw:.1f} GB/s"],
-      textposition='auto',
-      name='Bandwidth',
-      marker_color=[COLORS["dispatch"], COLORS["combine"]]
-  ))
+  return metrics_df
 
-  # Add latency bars on secondary axis
-  fig.add_trace(go.Bar(
-      x=['Dispatch Latency', 'Combine Latency'],
-      y=[dispatch_latency, combine_latency],
-      text=[f"{dispatch_latency:.1f} μs", f"{combine_latency:.1f} μs"],
-      textposition='auto',
-      name='Latency',
-      marker_color='rgba(255, 99, 71, 0.7)',
-      yaxis='y2'
-  ))
+# Calculate system layout
+gpu_positions, expert_positions, nodes_per_row, rows = create_system_layout(num_gpus, experts_per_gpu)
 
-  # Set layout
-  fig.update_layout(
-      title="Estimated Performance Metrics",
-      yaxis=dict(title="Bandwidth (GB/s)"),
-      yaxis2=dict(title="Latency (μs)", overlaying='y', side='right'),
-      barmode='group',
-      height=300
-  )
+# Generate token data
+token_data = generate_token_data(num_gpus, tokens_per_gpu, experts_per_gpu, topk)
+token_positions = get_token_positions(token_data, gpu_positions, tokens_per_gpu)
 
-  return fig
+# Create tabs for different views
+tabs = st.tabs(["Visualization", "Token Details", "Performance Metrics"])
 
-# Main visualization
-col1, col2 = st.columns([2, 1])
+# Visualization tab
+with tabs[0]:
+  if operation == "Complete Flow":
+      st.header("Complete MoE Flow Animation")
 
-with col1:
-  # Create system visualization
-  system_fig, gpu_positions, expert_positions = create_system_visualization(
-      num_gpus, experts_per_gpu, comm_type
-  )
+      # Create containers for animation
+      progress_bar = st.progress(0)
+      animation_placeholder = st.empty()
 
-  # Generate token data
-  token_data = generate_token_data(num_gpus, tokens_per_gpu, experts_per_gpu, topk)
+      # Control animation
+      start_stop = st.button("Start/Stop Animation")
 
-  # Create animation
-  if operation != "Complete Flow":
-      # Single operation (dispatch or combine)
-      progress = st.slider("Animation Progress", 0.0, 1.0, 0.5, 0.01)
-
-      # Add token traces
-      token_traces = visualize_token_routing(
-          token_data, gpu_positions, expert_positions,
-          progress, "Dispatch" if operation == "Dispatch" else "Combine"
-      )
-
-      for trace in token_traces:
-          system_fig.add_trace(trace)
-
-  else:
-      # Complete flow (auto-animate)
-      st.write("Complete flow animation:")
-      progress_placeholder = st.empty()
-      animation_container = st.empty()
-
-      # Use session state to track animation
+      # Animation state
       if 'animating' not in st.session_state:
           st.session_state.animating = False
 
-      start_button = st.button("Start Animation")
-
-      if start_button:
-          st.session_state.animating = True
+      if start_stop:
+          st.session_state.animating = not st.session_state.animating
 
       if st.session_state.animating:
-          # Create complete flow animation
-          for i in range(101):
-              progress = i / 100
-              progress_placeholder.progress(progress)
+          # Run animation
+          for step in range(101):
+              # Update progress
+              progress = step / 100
+              progress_bar.progress(progress)
 
-              # Create new figure for each frame
-              frame_fig, _, _ = create_system_visualization(
-                  num_gpus, experts_per_gpu, comm_type
+              # Create fresh figure
+              anim_fig = create_system_visualization(
+                  gpu_positions, expert_positions, experts_per_gpu,
+                  comm_type, nodes_per_row, rows
               )
 
-              # Determine which operation to show
+              # Determine operation phase
               if progress < 0.5:
                   # Dispatch phase (0-50%)
                   dispatch_progress = progress * 2
-                  token_traces = visualize_token_routing(
-                      token_data, gpu_positions, expert_positions,
+                  token_traces = create_token_traces(
+                      token_data, token_positions, expert_positions,
                       dispatch_progress, "Dispatch"
                   )
+                  phase_label = "Dispatch Phase"
               else:
                   # Combine phase (50-100%)
                   combine_progress = (progress - 0.5) * 2
-                  token_traces = visualize_token_routing(
-                      token_data, gpu_positions, expert_positions,
+                  token_traces = create_token_traces(
+                      token_data, token_positions, expert_positions,
                       combine_progress, "Combine"
                   )
+                  phase_label = "Combine Phase"
 
+              # Add token traces to figure
               for trace in token_traces:
-                  frame_fig.add_trace(trace)
+                  anim_fig.add_trace(trace)
 
-              animation_container.plotly_chart(frame_fig, use_container_width=True)
+              # Update title
+              anim_fig.update_layout(title=f"MoE Communication - {phase_label} ({int(progress*100)}%)")
 
-              # Control animation speed
+              # Display frame
+              animation_placeholder.plotly_chart(anim_fig, use_container_width=True)
+
+              # Control speed
               time.sleep(0.05 / animation_speed)
 
-          st.session_state.animating = False
-      # else:
-      #     # Static visualization with both operations
-      #     # Dispatch traces (halfway)
-      #     dispatch_traces = visualize_token_routing(
-      #         token_data, gpu_positions, expert_positions,
-      #         0.5, "Dispatch"
-      #     )
+              # Check if animation was stopped
+              if not st.session_state.animating:
+                  break
 
-      #     # Combine traces (starting)
-      #     combine_traces = visualize_token_routing(
-      #         token_data, gpu_positions, expert_positions,
-      #         0.1, "Combine"
-      #     )
-
-      #     for trace in dispatch_traces + combine_traces:
-      #         system_fig.add_trace(trace)
-
-      #     st.plotly_chart(system_fig, use_container_width=True)
-      #2. Ensure the static view doesn't conflict with animation:
-      # Replace the else block in the animation section:
+          # Reset animation state when finished
+          if progress >= 0.99:
+              st.session_state.animating = False
       else:
-          # Static visualization with both operations
-          static_fig, _, _ = create_system_visualization(
-              num_gpus, experts_per_gpu, comm_type
+          # Static view (midway through flow)
+          static_fig = create_system_visualization(
+              gpu_positions, expert_positions, experts_per_gpu,
+              comm_type, nodes_per_row, rows
           )
-    
-          # Dispatch traces (halfway)
-          dispatch_traces = visualize_token_routing(
-              token_data, gpu_positions, expert_positions,
+
+          # Add both dispatch and combine traces
+          dispatch_traces = create_token_traces(
+              token_data, token_positions, expert_positions,
               0.5, "Dispatch"
           )
-    
-          # Combine traces (starting)
-          combine_traces = visualize_token_routing(
-              token_data, gpu_positions, expert_positions,
-              0.1, "Combine"
+
+          combine_traces = create_token_traces(
+              token_data, token_positions, expert_positions,
+              0.2, "Combine"
           )
-    
+
+          # Add traces to figure
           for trace in dispatch_traces + combine_traces:
               static_fig.add_trace(trace)
-    
-          animation_container.plotly_chart(static_fig, use_container_width=True)
 
-  #if operation != "Complete Flow" or not st.session_state.animating:
-   #   st.plotly_chart(system_fig, use_container_width=True)
-  if (operation != "Complete Flow" or not st.session_state.animating) and not animation_container.empty:
-      animation_container.plotly_chart(system_fig, use_container_width=True)
+          # Update title
+          static_fig.update_layout(title="MoE Communication - Full Flow View")
 
+          # Display static view
+          animation_placeholder.plotly_chart(static_fig, use_container_width=True)
+  else:
+      # Single operation view (Dispatch or Combine)
+      st.header(f"{operation} Operation")
 
-with col2:
-  # Display token routing information
-  st.subheader("Token Routing Information")
+      # Container for visualization
+      viz_placeholder = st.empty()
 
-  # Create a sample of tokens to display
-  display_tokens = min(5, len(token_data))
+      # Animation progress
+      progress = st.slider("Animation Progress", 0.0, 1.0, 0.5, 0.01, key="op_progress")
 
-  for i in range(display_tokens):
-      token = token_data[i]
-      st.markdown(f"**Token {i}** (from GPU {token['source_gpu']})")
+      # Create operation visualization
+      op_fig = create_system_visualization(
+          gpu_positions, expert_positions, experts_per_gpu,
+          comm_type, nodes_per_row, rows
+      )
 
-      # Create table of assignments
-      df = pd.DataFrame({
-          'Expert': [f"E{e}" for e in token['assigned_experts']],
-          'Weight': [f"{w:.2f}" for w in token['weights']],
-          'GPU': [f"GPU {e // experts_per_gpu}" for e in token['assigned_experts']]
-      })
-      st.dataframe(df, hide_index=True)
+      # Add token traces
+      token_traces = create_token_traces(
+          token_data, token_positions, expert_positions,
+          progress, operation
+      )
 
-  # Performance metrics
-  metrics_fig = create_performance_metrics(
+      # Add traces to figure
+      for trace in token_traces:
+          op_fig.add_trace(trace)
+
+      # Update title
+      op_fig.update_layout(title=f"MoE Communication - {operation} Operation")
+
+      # Display visualization
+      viz_placeholder.plotly_chart(op_fig, use_container_width=True)
+
+# Token Details tab
+with tabs[1]:
+  st.header("Token Routing Information")
+
+  # Select tokens to display
+  display_count = min(10, len(token_data))
+  selected_tokens = st.multiselect(
+      "Select tokens to view details",
+      options=list(range(len(token_data))),
+      default=list(range(min(5, len(token_data))))
+  )
+
+  if not selected_tokens:
+      st.info("Select one or more tokens to view their routing details")
+  else:
+      # Display token details
+      for token_idx in selected_tokens:
+          token = token_data[token_idx]
+
+          st.subheader(f"Token {token_idx}")
+
+          col1, col2 = st.columns([1, 3])
+
+          with col1:
+              st.write(f"Source: GPU {token['source_gpu']}")
+
+          with col2:
+              # Create token assignments table
+              assignments = []
+              for e_idx, expert_id in enumerate(token['assigned_experts']):
+                  assignments.append({
+                      'Expert': f"E{expert_id}",
+                      'GPU': f"GPU {expert_id // experts_per_gpu}",
+                      'Weight': f"{token['weights'][e_idx]:.2f}"
+                  })
+
+              assignments_df = pd.DataFrame(assignments)
+              st.dataframe(assignments_df, hide_index=True)
+
+# Performance Metrics tab
+with tabs[2]:
+  st.header("Communication Performance Analysis")
+
+  # Calculate performance metrics
+  metrics_df = create_performance_metrics(
       num_gpus, experts_per_gpu, tokens_per_gpu, topk, comm_type
   )
-  st.plotly_chart(metrics_fig, use_container_width=True)
 
-  # Statistics
-  st.subheader("Communication Statistics")
-  total_tokens = num_gpus * tokens_per_gpu
-  total_experts = num_gpus * experts_per_gpu
-  tokens_per_expert = total_tokens * topk / total_experts
+  col1, col2 = st.columns([3, 2])
 
-  st.metric("Total Tokens", f"{total_tokens}")
-  st.metric("Total Experts", f"{total_experts}")
-  st.metric("Avg. Tokens per Expert", f"{tokens_per_expert:.1f}")
+  with col1:
+      # Create bandwidth chart
+      bw_fig = px.bar(
+          metrics_df,
+          x='Operation',
+          y='Bandwidth (GB/s)',
+          color='Operation',
+          color_discrete_map={'Dispatch': COLORS['dispatch'], 'Combine': COLORS['combine']},
+          text_auto='.1f'
+      )
 
-  # Explain what's happening
-  st.subheader("What's Happening")
-  if operation == "Dispatch":
-      st.markdown("""
-      **Dispatch Operation**: Tokens are being routed from their source GPUs to their assigned expert 
-networks.
-      Each token is sent to its top-k experts, weighted by router scores.
-      """)
-  elif operation == "Combine":
-      st.markdown("""
-      **Combine Operation**: After expert processing, results are being sent back to the original GPUs.
-      The results are weighted and combined to produce the final output for each token.
-      """)
-  else:
-      st.markdown("""
-      **Complete Flow**: The full MoE operation cycle is shown, with tokens first dispatched to experts,
-      then processed, and finally combined back at their source GPUs.
-      """)
+      bw_fig.update_layout(
+          title="Estimated Bandwidth Utilization",
+          showlegend=False
+      )
 
-# Add explanation section
+      st.plotly_chart(bw_fig, use_container_width=True)
+
+      # Create latency chart
+      latency_fig = px.bar(
+          metrics_df,
+          x='Operation',
+          y='Latency (μs)',
+          color='Operation',
+          color_discrete_map={'Dispatch': COLORS['dispatch'], 'Combine': COLORS['combine']},
+          text_auto='.1f'
+      )
+
+      latency_fig.update_layout(
+          title="Estimated Latency",
+          showlegend=False
+      )
+
+      st.plotly_chart(latency_fig, use_container_width=True)
+
+  with col2:
+      # System statistics
+      st.subheader("System Statistics")
+
+      total_tokens = num_gpus * tokens_per_gpu
+      total_experts = num_gpus * experts_per_gpu
+      tokens_per_expert = total_tokens * topk / total_experts
+
+      st.metric("Total GPUs", f"{num_gpus}")
+      st.metric("Total Experts", f"{total_experts}")
+      st.metric("Total Tokens", f"{total_tokens}")
+      st.metric("Average Tokens per Expert", f"{tokens_per_expert:.1f}")
+
+      # Communication type info
+      st.subheader("Communication Info")
+
+      if comm_type == "Intranode (NVLink)":
+          st.info("Using high-bandwidth NVLink (150 GB/s) for intra-node communication.")
+      elif comm_type == "Internode (RDMA)":
+          st.info("Using RDMA (50 GB/s) for inter-node communication.")
+      else:
+          st.info("Using mixed communication: NVLink within nodes, RDMA between nodes.")
+
+# Footer with explanation
 st.markdown("---")
-st.subheader("About MoE Communication Patterns")
 st.markdown("""
-This visualizer demonstrates the communication patterns in Mixture-of-Experts (MoE) models using DeepEP.
+### About MoE Communication Patterns
 
-- **Dispatch**: Tokens are routed from source GPUs to their assigned experts
-- **Combine**: Expert outputs are sent back to source GPUs and weighted
-- **NVLink**: High-bandwidth connection within a node (~150 GB/s)
-- **RDMA**: Network connection between nodes (~50 GB/s)
+This visualizer demonstrates how DeepEP optimizes communication for Mixture-of-Experts (MoE) models:
 
-DeepEP optimizes these communication patterns to achieve near-theoretical bandwidth limits,
-enabling efficient scaling of MoE models across many GPUs.
+- **Dispatch Operation**: Routes tokens from their source GPUs to assigned experts across the system
+- **Combine Operation**: Returns processed results back to source GPUs with appropriate weighting
+- **Communication Challenges**: The all-to-all pattern is particularly challenging to optimize
+- **DeepEP Solution**: Specialized kernels for both NVLink and RDMA maximize bandwidth utilization
+
+DeepEP achieves near-theoretical bandwidth limits, enabling efficient scaling of MoE models across
+hundreds of experts on multiple GPUs.
 """)
 
-# Footer
 st.markdown("---")
-st.markdown("DeepEP Communication Pattern Visualizer • Built with Streamlit and Plotly")
+st.caption("DeepEP Communication Pattern Visualizer • Made with Streamlit and Plotly")
 
