@@ -1356,8 +1356,7 @@ unsafe_allow_html=True)
                go.Bar(
                    x=load_labels,
                    y=load_values,
-                   marker_color=['rgba(55, 126, 184, 0.7)', 'rgba(77, 175, 74, 0.7)', 'rgba(228, 26, 28, 
-0.7)'],
+                   marker_color=['rgba(55, 126, 184, 0.7)', 'rgba(77, 175, 74, 0.7)', 'rgba(228, 26, 28, 0.7)'],
                    text=[f"{val:.1f}" for val in load_values],
                    textposition='auto'
                )
@@ -1385,8 +1384,7 @@ unsafe_allow_html=True)
                go.Bar(
                    x=time_labels,
                    y=time_values,
-                   marker_color=['rgba(55, 126, 184, 0.7)', 'rgba(228, 26, 28, 0.7)', 'rgba(77, 175, 74, 
-0.7)'],
+                   marker_color=['rgba(55, 126, 184, 0.7)', 'rgba(228, 26, 28, 0.7)', 'rgba(77, 175, 74, 0.7)'],
                    text=[f"{val:.2f} ms" for val in time_values],
                    textposition='auto'
                )
