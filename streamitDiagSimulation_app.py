@@ -6,9 +6,6 @@ import plotly.graph_objects as go
 import time
 from datetime import datetime
 import re
-import base64
-import io
-from PIL import Image
 
 # Page configuration
 st.set_page_config(
@@ -135,8 +132,10 @@ with st.sidebar:
       if intranode_conn == "NVLink":
           nvlink_gen = st.selectbox("NVLink Generation", ["NVLink 3.0", "NVLink 4.0", "NVLink 5.0"])
 
-      internode_conn = st.selectbox("Internode Connection",
-                                   ["InfiniBand HDR", "InfiniBand NDR", "InfiniBand EDR", "RoCE", "Other"])
+      internode_conn = st.selectbox(
+          "Internode Connection",
+          ["InfiniBand HDR", "InfiniBand NDR", "InfiniBand EDR", "RoCE", "Other"]
+      )
 
       if internode_conn == "Other":
           internode_conn = st.text_input("Specify Connection Type")
@@ -173,7 +172,8 @@ def parse_profiling_logs(logs):
   }
 
   # Regular expressions for log pattern matching
-  dispatch_pattern = r"DISPATCH.*tokens=(\d+).*hidden=(\d+).*gpus=(\d+).*time=(\d+\.\d+)ms.*BW=(\d+\.\d+)GB/s"
+  dispatch_pattern =
+r"DISPATCH.*tokens=(\d+).*hidden=(\d+).*gpus=(\d+).*time=(\d+\.\d+)ms.*BW=(\d+\.\d+)GB/s"
   combine_pattern = r"COMBINE.*tokens=(\d+).*hidden=(\d+).*gpus=(\d+).*time=(\d+\.\d+)ms.*BW=(\d+\.\d+)GB/s"
 
   lines = logs.strip().split('\n')
@@ -211,22 +211,6 @@ def parse_profiling_logs(logs):
 
   return pd.DataFrame(parsed_data)
 
-def analyze_bandwidth_utilization(df, system_info):
-  """Analyze bandwidth utilization based on theoretical limits"""
-  if system_info is None:
-      return None
-
-  # Add theoretical bandwidth column based on operation type and GPUs involved
-  df["theoretical_bw"] = df.apply(
-      lambda row: get_theoretical_bandwidth(row, system_info),
-      axis=1
-  )
-
-  # Calculate utilization
-  df["utilization"] = (df["bandwidth_GBs"] / df["theoretical_bw"]) * 100
-
-  return df
-
 def get_theoretical_bandwidth(row, system_info):
   """Calculate theoretical bandwidth for the operation"""
   # Determine if operation is intranode or internode
@@ -252,6 +236,22 @@ def get_theoretical_bandwidth(row, system_info):
       # Internode operation
       return system_info["rdma_bandwidth"]
 
+def analyze_bandwidth_utilization(df, system_info):
+  """Analyze bandwidth utilization based on theoretical limits"""
+  if system_info is None:
+      return None
+
+  # Add theoretical bandwidth column based on operation type and GPUs involved
+  df["theoretical_bw"] = df.apply(
+      lambda row: get_theoretical_bandwidth(row, system_info),
+      axis=1
+  )
+
+  # Calculate utilization
+  df["utilization"] = (df["bandwidth_GBs"] / df["theoretical_bw"]) * 100
+
+  return df
+
 def identify_bottlenecks(df):
   """Identify performance bottlenecks from analyzed data"""
   bottlenecks = []
@@ -262,8 +262,9 @@ def identify_bottlenecks(df):
       bottlenecks.append({
           "type": "low_utilization",
           "severity": "high",
-          "description": "Low overall bandwidth utilization ({:.1f}%)".format(avg_util),
-          "details": "Bandwidth utilization is significantly below potential, indicating communication inefficiency"
+          "description": f"Low overall bandwidth utilization ({avg_util:.1f}%)",
+          "details": "Bandwidth utilization is significantly below potential, indicating communication 
+inefficiency"
       })
 
   # Check for dispatch vs combine imbalance
@@ -280,8 +281,8 @@ def identify_bottlenecks(df):
           bottlenecks.append({
               "type": "operation_imbalance",
               "severity": "medium",
-              "description": "{} operations are {:.1f}x slower than counterpart".format(slower_op, ratio),
-              "details": "Consider tuning {} configuration parameters".format(slower_op.lower())
+              "description": f"{slower_op} operations are {ratio:.1f}x slower than counterpart",
+              "details": f"Consider tuning {slower_op.lower()} configuration parameters"
           })
 
   # Check for internode performance issues
@@ -292,7 +293,7 @@ def identify_bottlenecks(df):
           bottlenecks.append({
               "type": "internode_performance",
               "severity": "high",
-              "description": "Poor internode communication efficiency ({:.1f}%)".format(internode_util),
+              "description": f"Poor internode communication efficiency ({internode_util:.1f}%)",
               "details": "RDMA communication is significantly underperforming, check network configuration"
           })
 
@@ -328,9 +329,9 @@ def generate_optimization_recommendations(bottlenecks, df, system_info):
       elif bottleneck["type"] == "operation_imbalance":
           slower_op = "Dispatch" if "Dispatch" in bottleneck["description"] else "Combine"
           recommendations.append({
-              "title": "Balance {} Performance".format(slower_op),
+              "title": f"Balance {slower_op} Performance",
               "steps": [
-                  "Use Buffer.get_{}_config() with auto-tuned values".format(slower_op.lower()),
+                  f"Use Buffer.get_{slower_op.lower()}_config() with auto-tuned values",
                   "Adjust token chunking parameters for more efficient transfers",
                   "Ensure appropriate batch sizes for your operation",
                   "Consider reducing hidden dimension for dispatch if using FP8"
@@ -397,7 +398,7 @@ def simulate_performance_data(system_info, duration=30, interval=1):
   timestamps = pd.date_range(
       start=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
       periods=duration,
-      freq="{}s".format(interval)
+      freq=f"{interval}s"
   )
 
   # Base parameters
@@ -512,10 +513,8 @@ def generate_topology_visualization(system_info):
       # Add node box
       fig.add_shape(
           type="rect",
-          x0=node_x,
-          y0=node_y,
-          x1=node_x + node_width,
-          y1=node_y + node_height,
+          x0=node_x, y0=node_y,
+          x1=node_x + node_width, y1=node_y + node_height,
           line=dict(color="blue", width=2),
           fillcolor="rgba(135, 206, 250, 0.2)"
       )
@@ -524,7 +523,7 @@ def generate_topology_visualization(system_info):
       fig.add_annotation(
           x=node_x + node_width/2,
           y=node_y + node_height - 15,
-          text="Node {}".format(node_idx),
+          text=f"Node {node_idx}",
           showarrow=False,
           font=dict(size=14, color="blue")
       )
@@ -547,24 +546,22 @@ def generate_topology_visualization(system_info):
 
           # Add GPU marker
           fig.add_trace(go.Scatter(
-              x=[gpu_x],
-              y=[gpu_y],
+              x=[gpu_x], y=[gpu_y],
               mode="markers",
               marker=dict(
                   size=gpu_radius,
                   color="green",
                   line=dict(color="darkgreen", width=2)
               ),
-              text="GPU {}".format(node_idx * gpus_per_node + gpu_idx),
+              text=f"GPU {node_idx * gpus_per_node + gpu_idx}",
               hoverinfo="text",
               showlegend=False
           ))
 
           # Add GPU label
           fig.add_annotation(
-              x=gpu_x,
-              y=gpu_y,
-              text="{}".format(node_idx * gpus_per_node + gpu_idx),
+              x=gpu_x, y=gpu_y,
+              text=f"{node_idx * gpus_per_node + gpu_idx}",
               showarrow=False,
               font=dict(size=12, color="white")
           )
@@ -584,8 +581,7 @@ def generate_topology_visualization(system_info):
                   j_y = node_y + node_height/(gpu_rows+1) * (j_row + 1)
 
                   fig.add_trace(go.Scatter(
-                      x=[i_x, j_x],
-                      y=[i_y, j_y],
+                      x=[i_x, j_x], y=[i_y, j_y],
                       mode="lines",
                       line=dict(color="orange", width=3),
                       hoverinfo="text",
@@ -608,18 +604,17 @@ def generate_topology_visualization(system_info):
               j_y = j_row * (node_height + node_spacing) + node_height/2
 
               fig.add_trace(go.Scatter(
-                  x=[i_x, j_x],
-                  y=[i_y, j_y],
+                  x=[i_x, j_x], y=[i_y, j_y],
                   mode="lines",
                   line=dict(color="red", width=2, dash="dash"),
                   hoverinfo="text",
-                  text="{}".format(system_info['internode_conn']),
+                  text=f"{system_info['internode_conn']}",
                   showlegend=(i == 0 and j == 1)
               ))
 
   # Layout settings
   fig.update_layout(
-      title="System Topology: {} GPUs across {} Nodes".format(num_gpus, num_nodes),
+      title=f"System Topology: {num_gpus} GPUs across {num_nodes} Nodes",
       showlegend=True,
       height=max(400, 200 * rows + 100),
       width=max(600, 350 * nodes_per_row),
@@ -750,16 +745,16 @@ if st.session_state.active_tab == "log_analysis":
 
       with col2:
           avg_bw = df["bandwidth_GBs"].mean()
-          st.metric("Avg Bandwidth", "{:.1f} GB/s".format(avg_bw))
+          st.metric("Avg Bandwidth", f"{avg_bw:.1f} GB/s")
 
       with col3:
           avg_duration = df["duration_ms"].mean()
-          st.metric("Avg Latency", "{:.2f} ms".format(avg_duration))
+          st.metric("Avg Latency", f"{avg_duration:.2f} ms")
 
       with col4:
           if "utilization" in df.columns:
               avg_util = df["utilization"].mean()
-              st.metric("Avg Utilization", "{:.1f}%".format(avg_util))
+              st.metric("Avg Utilization", f"{avg_util:.1f}%")
 
       # Detailed metrics
       st.markdown('<h3 class="diagnostic-header">Operation Breakdown</h3>', unsafe_allow_html=True)
@@ -769,21 +764,33 @@ if st.session_state.active_tab == "log_analysis":
       with col1:
           # Bandwidth chart
           try:
+              # Create a simpler chart to avoid serialization issues
+              op_indices = list(range(len(df)))
+              bandwidth_values = df["bandwidth_GBs"].tolist()
+              operation_types = df["operation"].tolist()
+
+              # Create a DataFrame with simple types
+              chart_df = pd.DataFrame({
+                  "index": op_indices,
+                  "bandwidth": bandwidth_values,
+                  "operation": operation_types
+              })
+
               bandwidth_fig = px.line(
-                  df,
-                  x=list(range(len(df))),
-                  y="bandwidth_GBs",
+                  chart_df,
+                  x="index",
+                  y="bandwidth",
                   color="operation",
-                  labels={"x": "Operation Index", "bandwidth_GBs": "Bandwidth (GB/s)"},
+                  labels={"index": "Operation Index", "bandwidth": "Bandwidth (GB/s)"},
                   title="Bandwidth by Operation"
               )
 
               if "theoretical_bw" in df.columns:
-                  # Add theoretical bandwidth line
+                  # Add theoretical bandwidth line using simple list conversion
                   bandwidth_fig.add_trace(
                       go.Scatter(
-                          x=list(range(len(df))),
-                          y=df["theoretical_bw"],
+                          x=op_indices,
+                          y=df["theoretical_bw"].tolist(),
                           mode="lines",
                           line=dict(dash="dash", color="gray"),
                           name="Theoretical"
@@ -792,22 +799,26 @@ if st.session_state.active_tab == "log_analysis":
 
               st.plotly_chart(bandwidth_fig, use_container_width=True)
           except Exception as e:
-              st.error("Error creating bandwidth chart: {}".format(str(e)))
+              st.error(f"Error creating bandwidth chart: {e}")
 
       with col2:
           # Operation type breakdown
           try:
               op_counts = df["operation"].value_counts()
 
+              # Convert to simple lists
+              op_types = op_counts.index.tolist()
+              op_values = op_counts.values.tolist()
+
               op_fig = px.pie(
-                  values=op_counts.values,
-                  names=op_counts.index,
+                  names=op_types,
+                  values=op_values,
                   title="Operation Types"
               )
 
               st.plotly_chart(op_fig, use_container_width=True)
           except Exception as e:
-              st.error("Error creating operation chart: {}".format(str(e)))
+              st.error(f"Error creating operation chart: {e}")
 
       # Latency analysis
       st.markdown('<h3 class="diagnostic-header">Latency Analysis</h3>', unsafe_allow_html=True)
@@ -815,14 +826,30 @@ if st.session_state.active_tab == "log_analysis":
       col1, col2 = st.columns(2)
 
       with col1:
-          # Latency by GPU count
+          # Latency by GPU count - simplified approach
           try:
-              latency_by_gpu = df.groupby(["operation", "gpus_involved"]).agg({
-                  "duration_ms": "mean"
-              }).reset_index()
+              # Manual aggregation to avoid serialization issues
+              gpu_groups = {}
+              for op in df["operation"].unique():
+                  gpu_groups[op] = {}
+                  op_df = df[df["operation"] == op]
+                  for gpu in op_df["gpus_involved"].unique():
+                      gpu_groups[op][gpu] = op_df[op_df["gpus_involved"] == gpu]["duration_ms"].mean()
+
+              # Convert to simpler format
+              gpu_latency_data = []
+              for op, gpu_dict in gpu_groups.items():
+                  for gpu, latency in gpu_dict.items():
+                      gpu_latency_data.append({
+                          "operation": op,
+                          "gpus_involved": gpu,
+                          "duration_ms": latency
+                      })
+
+              gpu_latency_df = pd.DataFrame(gpu_latency_data)
 
               gpu_latency_fig = px.bar(
-                  latency_by_gpu,
+                  gpu_latency_df,
                   x="gpus_involved",
                   y="duration_ms",
                   color="operation",
@@ -832,50 +859,44 @@ if st.session_state.active_tab == "log_analysis":
 
               st.plotly_chart(gpu_latency_fig, use_container_width=True)
           except Exception as e:
-              st.error("Error creating GPU latency chart: {}".format(str(e)))
+              st.error(f"Error creating GPU latency chart: {e}")
 
       with col2:
           # Latency by token count - using manual binning to avoid serialization issues
           try:
               # Create token bins manually
-              token_ranges = [
-                  df["tokens"].min(),
-                  df["tokens"].min() + (df["tokens"].max() - df["tokens"].min())/4,
-                  df["tokens"].min() + 2*(df["tokens"].max() - df["tokens"].min())/4,
-                  df["tokens"].min() + 3*(df["tokens"].max() - df["tokens"].min())/4,
-                  df["tokens"].max()
+              token_min = df["tokens"].min()
+              token_max = df["tokens"].max()
+              bin_size = (token_max - token_min) / 4
+
+              bins = [
+                  (token_min, token_min + bin_size),
+                  (token_min + bin_size, token_min + 2*bin_size),
+                  (token_min + 2*bin_size, token_min + 3*bin_size),
+                  (token_min + 3*bin_size, token_max + 1)  # +1 to include max value
               ]
 
-              token_bins = []
-              latency_values = []
-              operation_types = []
+              bin_labels = [f"{int(low)}-{int(high-1)}" for low, high in bins]
+
+              # Manual aggregation
+              token_latency_data = []
 
               for op in df["operation"].unique():
                   op_df = df[df["operation"] == op]
 
-                  for i in range(len(token_ranges)-1):
-                      bin_min = token_ranges[i]
-                      bin_max = token_ranges[i+1]
-                      bin_name = "{}-{}".format(int(bin_min), int(bin_max))
+                  for i, (bin_low, bin_high) in enumerate(bins):
+                      bin_df = op_df[(op_df["tokens"] >= bin_low) & (op_df["tokens"] < bin_high)]
+                      if len(bin_df) > 0:
+                          token_latency_data.append({
+                              "operation": op,
+                              "tokens_bin": bin_labels[i],
+                              "duration_ms": bin_df["duration_ms"].mean()
+                          })
 
-                      # Filter data for this bin
-                      bin_data = op_df[(op_df["tokens"] >= bin_min) & (op_df["tokens"] < bin_max)]
-
-                      if len(bin_data) > 0:
-                          avg_latency = bin_data["duration_ms"].mean()
-                          token_bins.append(bin_name)
-                          latency_values.append(avg_latency)
-                          operation_types.append(op)
-
-              # Create dataframe from manual binning
-              latency_by_tokens = pd.DataFrame({
-                  "tokens_bin": token_bins,
-                  "duration_ms": latency_values,
-                  "operation": operation_types
-              })
+              token_latency_df = pd.DataFrame(token_latency_data)
 
               token_latency_fig = px.bar(
-                  latency_by_tokens,
+                  token_latency_df,
                   x="tokens_bin",
                   y="duration_ms",
                   color="operation",
@@ -885,7 +906,7 @@ if st.session_state.active_tab == "log_analysis":
 
               st.plotly_chart(token_latency_fig, use_container_width=True)
           except Exception as e:
-              st.error("Error creating token latency chart: {}".format(str(e)))
+              st.error(f"Error creating token latency chart: {e}")
 
       # Utilization analysis
       if "utilization" in df.columns:
@@ -896,28 +917,69 @@ if st.session_state.active_tab == "log_analysis":
           with col1:
               # Utilization histogram
               try:
-                  util_fig = px.histogram(
-                      df,
+                  # Create bins manually
+                  util_min = max(0, df["utilization"].min())
+                  util_max = min(100, df["utilization"].max())
+                  bin_size = (util_max - util_min) / 10
+
+                  util_bins = [util_min + i*bin_size for i in range(11)]
+                  util_counts = {op: [0] * 10 for op in df["operation"].unique()}
+
+                  for op in df["operation"].unique():
+                      op_df = df[df["operation"] == op]
+                      for i in range(10):
+                          bin_low = util_bins[i]
+                          bin_high = util_bins[i+1]
+                          util_counts[op][i] = len(op_df[(op_df["utilization"] >= bin_low) &
+                                                         (op_df["utilization"] < bin_high)])
+
+                  # Create dataframe for histogram
+                  hist_data = []
+                  for op in df["operation"].unique():
+                      for i in range(10):
+                          bin_low = util_bins[i]
+                          bin_high = util_bins[i+1]
+                          bin_center = (bin_low + bin_high) / 2
+                          hist_data.append({
+                              "operation": op,
+                              "utilization": bin_center,
+                              "count": util_counts[op][i]
+                          })
+
+                  hist_df = pd.DataFrame(hist_data)
+
+                  util_fig = px.bar(
+                      hist_df,
                       x="utilization",
+                      y="count",
                       color="operation",
-                      nbins=20,
-                      labels={"utilization": "Bandwidth Utilization (%)"},
+                      labels={"utilization": "Bandwidth Utilization (%)", "count": "Count"},
                       title="Bandwidth Utilization Distribution"
                   )
 
                   st.plotly_chart(util_fig, use_container_width=True)
               except Exception as e:
-                  st.error("Error creating utilization histogram: {}".format(str(e)))
+                  st.error(f"Error creating utilization histogram: {e}")
 
           with col2:
               # Utilization by GPU count
               try:
-                  util_by_gpu = df.groupby(["operation", "gpus_involved"]).agg({
-                      "utilization": "mean"
-                  }).reset_index()
+                  # Manual aggregation
+                  util_by_gpu_data = []
+                  for op in df["operation"].unique():
+                      op_df = df[df["operation"] == op]
+                      for gpu in sorted(op_df["gpus_involved"].unique()):
+                          gpu_df = op_df[op_df["gpus_involved"] == gpu]
+                          util_by_gpu_data.append({
+                              "operation": op,
+                              "gpus_involved": gpu,
+                              "utilization": gpu_df["utilization"].mean()
+                          })
+
+                  util_by_gpu_df = pd.DataFrame(util_by_gpu_data)
 
                   util_gpu_fig = px.line(
-                      util_by_gpu,
+                      util_by_gpu_df,
                       x="gpus_involved",
                       y="utilization",
                       color="operation",
@@ -928,7 +990,7 @@ if st.session_state.active_tab == "log_analysis":
 
                   st.plotly_chart(util_gpu_fig, use_container_width=True)
               except Exception as e:
-                  st.error("Error creating utilization by GPU chart: {}".format(str(e)))
+                  st.error(f"Error creating utilization by GPU chart: {e}")
 
       # Raw data
       with st.expander("View Raw Performance Data"):
@@ -948,14 +1010,15 @@ if st.session_state.active_tab == "log_analysis":
                       "low": "info-box"
                   }.get(bottleneck["severity"], "info-box")
 
-                  st.markdown('<div class="{}">'.format(severity_color), unsafe_allow_html=True)
-                  st.markdown("**{}**".format(bottleneck['description']))
+                  st.markdown(f'<div class="{severity_color}">', unsafe_allow_html=True)
+                  st.markdown(f"**{bottleneck['description']}**")
                   st.markdown(bottleneck["details"])
                   st.markdown('</div>', unsafe_allow_html=True)
           else:
               st.markdown('<div class="success-box">', unsafe_allow_html=True)
               st.markdown("**No significant bottlenecks detected**")
-              st.markdown("The communication performance appears to be efficient based on the analyzed metriics.")
+              st.markdown("The communication performance appears to be efficient based on the analyzed 
+metrics.")
               st.markdown('</div>', unsafe_allow_html=True)
 
 # Communication Benchmark Tab
@@ -1014,15 +1077,15 @@ st.session_state.system_info["num_gpus"])
 
           with col1:
               max_bw = df["bandwidth_GBs"].max()
-              st.metric("Peak Bandwidth", "{:.1f} GB/s".format(max_bw))
+              st.metric("Peak Bandwidth", f"{max_bw:.1f} GB/s")
 
           with col2:
               min_latency = df["duration_ms"].min()
-              st.metric("Minimum Latency", "{:.2f} ms".format(min_latency))
+              st.metric("Minimum Latency", f"{min_latency:.2f} ms")
 
           with col3:
               avg_util = df["utilization"].mean()
-              st.metric("Avg Utilization", "{:.1f}%".format(avg_util))
+              st.metric("Avg Utilization", f"{avg_util:.1f}%")
 
           # Bandwidth by configuration
           st.markdown('<h3 class="diagnostic-header">Bandwidth by Configuration</h3>',
@@ -1030,28 +1093,40 @@ unsafe_allow_html=True)
 
           # Group by token count and GPU count
           try:
-              token_tabs = st.tabs(["{} Tokens".format(t) for t in sorted(df["tokens"].unique())])
+              token_tabs = st.tabs([f"{t} Tokens" for t in sorted(df["tokens"].unique())])
 
               for i, token_count in enumerate(sorted(df["tokens"].unique())):
                   with token_tabs[i]:
                       token_df = df[df["tokens"] == token_count]
 
+                      # Convert to simplified data for charts
+                      bw_chart_data = []
+                      for _, row in token_df.iterrows():
+                          bw_chart_data.append({
+                              "gpus_involved": row["gpus_involved"],
+                              "bandwidth_GBs": row["bandwidth_GBs"],
+                              "theoretical_bw": row["theoretical_bw"],
+                              "intranode": "Yes" if row["intranode"] else "No"
+                          })
+
+                      bw_chart_df = pd.DataFrame(bw_chart_data)
+
                       # Bandwidth plot
                       bw_fig = px.bar(
-                          token_df,
+                          bw_chart_df,
                           x="gpus_involved",
                           y="bandwidth_GBs",
                           color="intranode",
                           labels={"gpus_involved": "GPUs Involved", "bandwidth_GBs": "Bandwidth (GB/s)"},
-                          title="Bandwidth with {} Tokens".format(token_count),
-                          color_discrete_map={True: "green", False: "orange"}
+                          title=f"Bandwidth with {token_count} Tokens",
+                          color_discrete_map={"Yes": "green", "No": "orange"}
                       )
 
                       # Add theoretical bandwidth line
                       bw_fig.add_trace(
                           go.Scatter(
-                              x=token_df["gpus_involved"],
-                              y=token_df["theoretical_bw"],
+                              x=bw_chart_df["gpus_involved"],
+                              y=bw_chart_df["theoretical_bw"],
                               mode="lines",
                               line=dict(dash="dash", color="gray"),
                               name="Theoretical"
@@ -1060,52 +1135,62 @@ unsafe_allow_html=True)
 
                       st.plotly_chart(bw_fig, use_container_width=True)
 
-                      # Latency plot
+                      # Latency plot - simplified
+                      latency_data = []
+                      for _, row in token_df.iterrows():
+                          latency_data.append({
+                              "gpus_involved": row["gpus_involved"],
+                              "duration_ms": row["duration_ms"]
+                          })
+
+                      latency_df = pd.DataFrame(latency_data)
+
                       latency_fig = px.line(
-                          token_df,
+                          latency_df,
                           x="gpus_involved",
                           y="duration_ms",
                           markers=True,
                           labels={"gpus_involved": "GPUs Involved", "duration_ms": "Latency (ms)"},
-                          title="Latency with {} Tokens".format(token_count)
+                          title=f"Latency with {token_count} Tokens"
                       )
 
                       st.plotly_chart(latency_fig, use_container_width=True)
           except Exception as e:
-              st.error("Error creating token tabs: {}".format(str(e)))
+              st.error(f"Error creating token tabs: {e}")
 
           # Utilization heatmap
           st.markdown('<h3 class="diagnostic-header">Bandwidth Utilization</h3>', unsafe_allow_html=True)
 
           try:
-              # Create manual data for heatmap to avoid pivot_table serialization issues
+              # Create manual data for heatmap
               heatmap_data = []
+
               for token in sorted(df["tokens"].unique()):
                   for gpu in sorted(df["gpus_involved"].unique()):
                       subset = df[(df["tokens"] == token) & (df["gpus_involved"] == gpu)]
                       if len(subset) > 0:
                           heatmap_data.append({
-                              "tokens": str(token),
-                              "gpus": str(gpu),
+                              "token": str(token),
+                              "gpu": str(gpu),
                               "utilization": subset["utilization"].mean()
                           })
 
               heatmap_df = pd.DataFrame(heatmap_data)
 
-              # Create heatmap
-              util_fig = px.density_heatmap(
-                  heatmap_df,
-                  x="gpus",
-                  y="tokens",
-                  z="utilization",
-                  labels=dict(x="GPUs Involved", y="Tokens", color="Utilization (%)"),
-                  color_continuous_scale="RdYlGn",
-                  title="Bandwidth Utilization Heatmap"
-              )
+              if len(heatmap_df) > 0:
+                  util_fig = px.density_heatmap(
+                      heatmap_df,
+                      x="gpu",
+                      y="token",
+                      z="utilization",
+                      labels=dict(x="GPUs Involved", y="Tokens", color="Utilization (%)"),
+                      color_continuous_scale="RdYlGn",
+                      title="Bandwidth Utilization Heatmap"
+                  )
 
-              st.plotly_chart(util_fig, use_container_width=True)
+                  st.plotly_chart(util_fig, use_container_width=True)
           except Exception as e:
-              st.error("Error creating utilization heatmap: {}".format(str(e)))
+              st.error(f"Error creating utilization heatmap: {e}")
 
           # Raw data
           with st.expander("View Raw Benchmark Data"):
@@ -1118,38 +1203,28 @@ unsafe_allow_html=True)
           best_throughput = df.loc[df["bandwidth_GBs"].idxmax()]
 
           st.markdown('<div class="success-box">', unsafe_allow_html=True)
-          st.markdown("""
+          st.markdown(f"""
           **Best Throughput Configuration:**
-          - **Tokens:** {}
-          - **GPUs:** {}
-          - **Bandwidth:** {:.1f} GB/s ({:.1f}% of theoretical)
-          - **Latency:** {:.2f} ms
-          """.format(
-              best_throughput['tokens'],
-              best_throughput['gpus_involved'],
-              best_throughput['bandwidth_GBs'],
-              best_throughput['utilization'],
-              best_throughput['duration_ms']
-          ))
+          - **Tokens:** {best_throughput['tokens']}
+          - **GPUs:** {best_throughput['gpus_involved']}
+          - **Bandwidth:** {best_throughput['bandwidth_GBs']:.1f} GB/s ({best_throughput['utilization']:.1f}%
+of theoretical)
+          - **Latency:** {best_throughput['duration_ms']:.2f} ms
+          """)
           st.markdown('</div>', unsafe_allow_html=True)
 
           # Best latency configuration
           best_latency = df.loc[df["duration_ms"].idxmin()]
 
           st.markdown('<div class="info-box">', unsafe_allow_html=True)
-          st.markdown("""
+          st.markdown(f"""
           **Best Latency Configuration:**
-          - **Tokens:** {}
-          - **GPUs:** {}
-          - **Bandwidth:** {:.1f} GB/s ({:.1f}% of theoretical)
-          - **Latency:** {:.2f} ms
-          """.format(
-              best_latency['tokens'],
-              best_latency['gpus_involved'],
-              best_latency['bandwidth_GBs'],
-              best_latency['utilization'],
-              best_latency['duration_ms']
-          ))
+          - **Tokens:** {best_latency['tokens']}
+          - **GPUs:** {best_latency['gpus_involved']}
+          - **Bandwidth:** {best_latency['bandwidth_GBs']:.1f} GB/s ({best_latency['utilization']:.1f}% of 
+theoretical)
+          - **Latency:** {best_latency['duration_ms']:.2f} ms
+          """)
           st.markdown('</div>', unsafe_allow_html=True)
 
 # Topology Analysis Tab
@@ -1173,7 +1248,7 @@ elif st.session_state.active_tab == "topology":
           if topo_fig:
               st.plotly_chart(topo_fig, use_container_width=True)
       except Exception as e:
-          st.error("Error generating topology visualization: {}".format(str(e)))
+          st.error(f"Error generating topology visualization: {e}")
 
       # System characteristics
       st.markdown('<h2 class="section-header">Communication Characteristics</h2>', unsafe_allow_html=True)
@@ -1183,10 +1258,10 @@ elif st.session_state.active_tab == "topology":
       with col1:
           st.markdown('<div class="metric-card">', unsafe_allow_html=True)
           st.markdown("### Intranode Communication")
-          st.markdown("**Connection Type:** {}".format(st.session_state.system_info['intranode_conn']))
+          st.markdown(f"**Connection Type:** {st.session_state.system_info['intranode_conn']}")
 
           if st.session_state.system_info['intranode_conn'] == "NVLink":
-              st.markdown("**NVLink Generation:** {}".format(st.session_state.system_info['nvlink_gen']))
+              st.markdown(f"**NVLink Generation:** {st.session_state.system_info['nvlink_gen']}")
 
               if st.session_state.system_info['nvlink_gen'] == "NVLink 3.0":
                   st.markdown("**Theoretical Bandwidth:** ~150 GB/s")
@@ -1204,8 +1279,8 @@ elif st.session_state.active_tab == "topology":
       with col2:
           st.markdown('<div class="metric-card">', unsafe_allow_html=True)
           st.markdown("### Internode Communication")
-          st.markdown("**Connection Type:** {}".format(st.session_state.system_info['internode_conn']))
-          st.markdown("**Theoretical Bandwidth:** ~{} GB/s".format(st.session_state.system_info['rdma_bandwidth']))
+          st.markdown(f"**Connection Type:** {st.session_state.system_info['internode_conn']}")
+          st.markdown(f"**Theoretical Bandwidth:** ~{st.session_state.system_info['rdma_bandwidth']} GB/s")
 
           if "InfiniBand" in st.session_state.system_info['internode_conn']:
               st.markdown("**RDMA Technology:** InfiniBand (optimal for DeepEP)")
@@ -1226,27 +1301,20 @@ elif st.session_state.active_tab == "topology":
       intranode_connections = num_nodes * ((gpus_per_node * (gpus_per_node - 1)) // 2)
       internode_connections = total_connections - intranode_connections
 
-      conn_data = pd.DataFrame({
-          "Connection Type": ["Intranode (NVLink)", "Internode (RDMA)", "Total"],
-          "Count": [intranode_connections, internode_connections, total_connections],
-          "Percentage": [
-              100 * intranode_connections / total_connections if total_connections > 0 else 0,
-              100 * internode_connections / total_connections if total_connections > 0 else 0,
-              100
-          ]
-      })
+      # Simple data for pie chart
+      conn_values = [intranode_connections, internode_connections]
+      conn_labels = ["Intranode (NVLink)", "Internode (RDMA)"]
 
       try:
           conn_fig = px.pie(
-              conn_data,
-              values="Count",
-              names="Connection Type",
+              values=conn_values,
+              names=conn_labels,
               title="Communication Path Distribution"
           )
 
           st.plotly_chart(conn_fig, use_container_width=True)
       except Exception as e:
-          st.error("Error creating connection distribution chart: {}".format(str(e)))
+          st.error(f"Error creating connection distribution chart: {e}")
 
       # Potential bottlenecks
       st.markdown('<h3 class="diagnostic-header">Potential Topology Bottlenecks</h3>',
@@ -1321,10 +1389,10 @@ elif st.session_state.active_tab == "recommendations":
 
               for rec in high_priority:
                   st.markdown('<div class="error-box">', unsafe_allow_html=True)
-                  st.markdown("**{}**".format(rec['title']))
+                  st.markdown(f"**{rec['title']}**")
                   st.markdown("Steps:")
                   for step in rec["steps"]:
-                      st.markdown("- {}".format(step))
+                      st.markdown(f"- {step}")
                   st.markdown('</div>', unsafe_allow_html=True)
 
           # Display medium priority recommendations
@@ -1333,10 +1401,10 @@ elif st.session_state.active_tab == "recommendations":
 
               for rec in medium_priority:
                   st.markdown('<div class="warning-box">', unsafe_allow_html=True)
-                  st.markdown("**{}**".format(rec['title']))
+                  st.markdown(f"**{rec['title']}**")
                   st.markdown("Steps:")
                   for step in rec["steps"]:
-                      st.markdown("- {}".format(step))
+                      st.markdown(f"- {step}")
                   st.markdown('</div>', unsafe_allow_html=True)
 
           # Display low priority recommendations
@@ -1345,15 +1413,16 @@ elif st.session_state.active_tab == "recommendations":
 
               for rec in low_priority:
                   st.markdown('<div class="info-box">', unsafe_allow_html=True)
-                  st.markdown("**{}**".format(rec['title']))
+                  st.markdown(f"**{rec['title']}**")
                   st.markdown("Steps:")
                   for step in rec["steps"]:
-                      st.markdown("- {}".format(step))
+                      st.markdown(f"- {step}")
                   st.markdown('</div>', unsafe_allow_html=True)
       else:
           st.markdown('<div class="success-box">', unsafe_allow_html=True)
           st.markdown("**Your system appears to be well-optimized!**")
-          st.markdown("Based on the analyzed data, no significant optimization opportunities were identified.")
+          st.markdown("Based on the analyzed data, no significant optimization opportunities were 
+identified.")
           st.markdown('</div>', unsafe_allow_html=True)
 
       # Code snippet examples
@@ -1524,37 +1593,39 @@ internode.
       best_token_size = token_util.idxmax()
 
       st.markdown('<div class="info-box">', unsafe_allow_html=True)
-      st.markdown("""
+      st.markdown(f"""
       **Optimal Token Batch Size**
       
-      Based on your benchmark results, a token batch size of **{}** provides the best bandwidth
-      utilization ({:.1f}%). Consider:
+      Based on your benchmark results, a token batch size of **{best_token_size}** provides the best 
+bandwidth
+      utilization ({token_util[best_token_size]:.1f}%). Consider:
       
       1. Adjusting your batch size to match this optimal value when possible
       2. For prefilling, aim for larger token counts close to this value
       3. For decoding, consider accumulating multiple requests to reach optimal batch sizes
-      """.format(best_token_size, token_util[best_token_size]))
+      """)
       st.markdown('</div>', unsafe_allow_html=True)
 
       # GPU count recommendation
       gpu_util = df.groupby("gpus_involved")["utilization"].mean()
-      best_small_config = gpu_util.iloc[:len(gpu_util)//2].idxmax() if len(gpu_util) > 1 else gpu_util.idxmax()
+      best_small_config = gpu_util.iloc[:len(gpu_util)//2].idxmax() if len(gpu_util) > 1 else
+gpu_util.idxmax()
 
       st.markdown('<div class="success-box">', unsafe_allow_html=True)
-      st.markdown("""
+      st.markdown(f"""
       **Optimal EP Group Size**
       
-      For best efficiency, consider an expert parallelism group size of **{}** GPUs, which
-      achieved {:.1f}% bandwidth utilization. If you need more experts, consider
+      For best efficiency, consider an expert parallelism group size of **{best_small_config}** GPUs, which
+      achieved {gpu_util[best_small_config]:.1f}% bandwidth utilization. If you need more experts, consider
       using multiple EP groups of this size rather than a single larger group.
-      """.format(best_small_config, gpu_util[best_small_config]))
+      """)
       st.markdown('</div>', unsafe_allow_html=True)
 
       # Code configuration example
       st.markdown('<h2 class="section-header">Configuration Examples</h2>', unsafe_allow_html=True)
 
       with st.expander("Optimal Configuration Code"):
-          st.code("""
+          st.code(f"""
 # Optimal DeepEP Configuration Based on Benchmark Results
 import torch.distributed as dist
 from deep_ep import Buffer
@@ -1564,7 +1635,7 @@ Buffer.set_num_sms(24)  # Adjust based on your specific GPU
 
 # Define optimal process group size
 def create_optimal_process_groups(world_size):
-  optimal_group_size = {}
+  optimal_group_size = {best_small_config}
   num_groups = world_size // optimal_group_size
   
   groups = []
@@ -1577,14 +1648,14 @@ def create_optimal_process_groups(world_size):
 # Get process groups
 world_size = dist.get_world_size()
 ep_groups = create_optimal_process_groups(world_size)
-local_ep_group = ep_groups[dist.get_rank() // {}]
+local_ep_group = ep_groups[dist.get_rank() // {best_small_config}]
 
 # Create buffer with optimal configuration
 buffer = Buffer(local_ep_group, num_nvl_bytes, num_rdma_bytes)
 
 # Optimal batch size for highest efficiency
-recommended_batch_size = {}
-          """.format(best_small_config, best_small_config, best_token_size))
+recommended_batch_size = {best_token_size}
+          """)
 
       with st.expander("Performance Monitoring Code"):
           st.code("""
@@ -1653,80 +1724,155 @@ def monitored_dispatch(buffer, x, topk_idx, topk_weights, **kwargs):
   return result
 
 # Print periodic performance reports
-if len(monitor.records) > 0 and len(monitor.records) % 100 == 0:
+
+# Performance Monitoring for DeepEP (continued)
+def monitored_combine(buffer, x, handle, topk_weights=None, **kwargs):
+  tokens = x.size(0)
+  hidden_size = x.size(1)
+  gpus_involved = buffer.group.size()
+
+  data_size_gb = (tokens * hidden_size * 2) / (1024 * 1024 * 1024)  # BF16
+
+  start_time = time.time()
+  result = buffer.combine(x, handle, topk_weights, **kwargs)
+  end_time = time.time()
+
+  monitor.record_operation("Combine", tokens, hidden_size, gpus_involved,
+                          start_time, end_time, data_size_gb)
+
+  return result
+
+# Generate performance report
+def generate_performance_report():
+  if len(monitor.records) == 0:
+      return "No performance data available"
+
   stats = monitor.get_statistics()
-  print(f"DeepEP Performance: {stats['avg_bandwidth']:.1f} GB/s avg, " 
-        f"{stats['avg_duration']:.2f} ms avg latency")
-          """)
-  else:
-      st.info("Run the Log Analysis or Communication Benchmark first to get personalized recommendations")
 
-      # General recommendations
-      st.markdown('<h2 class="section-header">General Optimization Guidelines</h2>', unsafe_allow_html=True)
+  report = [
+      "=== DeepEP Performance Report ===",
+      f"Operations: {sum(stats['operation_counts'].values())} total "
+      f"({stats['operation_counts'].get('Dispatch', 0)} dispatch, "
+      f"{stats['operation_counts'].get('Combine', 0)} combine)",
+      f"Bandwidth: {stats['avg_bandwidth']:.2f} GB/s avg, {stats['max_bandwidth']:.2f} GB/s peak",
+      f"Latency: {stats['avg_duration']:.2f} ms avg, {stats['min_duration']:.2f} ms min",
+      "================================="
+  ]
 
-      with st.expander("Buffer Configuration"):
-          st.markdown("""
-          ### Optimal Buffer Configuration
-          
-          1. **SM Allocation**
-             - Use `Buffer.set_num_sms(N)` to control GPU resources for communication
-             - For H100 GPUs, values between 20-28 often work well
-             - Adjust based on your specific workload needs
-          
-          2. **Buffer Sizing**
-             - Use the sizing hint functions to properly size buffers:
-               ```python
-               num_nvl_bytes = config.get_nvl_buffer_size_hint(hidden_size, group.size())
-               num_rdma_bytes = config.get_rdma_buffer_size_hint(hidden_size, group.size())
-               ```
-             - For low-latency mode, use:
-               ```python
-               rdma_size = Buffer.get_low_latency_rdma_size_hint(
-                   num_max_dispatch_tokens_per_rank, hidden, group.size(), num_experts
-               )
-               ```
-          
-          3. **Expert Alignment**
-             - Use the `expert_alignment` parameter to optimize memory access patterns
-             - Typically should be set to a multiple of 8 or 16
-          """)
+  return "\n".join(report)
 
-      with st.expander("Communication Optimizations"):
-          st.markdown("""
-          ### Communication Performance Tuning
-          
-          1. **NVLink Optimization**
-             - Ensure GPUs within a node are directly connected via NVLink
-             - Check topology with `nvidia-smi topo -m`
-             - Place frequently communicating experts on the same node
-          
-          2. **RDMA Tuning**
-             - Enable GPU Direct RDMA for best performance
-             - Set appropriate environment variables:
-               ```
-               NVSHMEM_IB_ENABLE_IBGDA=1
-               NVSHMEM_IBGDA_NIC_HANDLER=gpu
-               NVSHMEM_QP_DEPTH=1024
-               ```
-             - Use virtual lanes for traffic isolation: `NVSHMEM_IB_SL=<value>`
-          
-          3. **Precision Controls**
-             - Use FP8 for dispatch operations to reduce bandwidth requirements
-             - Keep BF16 for combine operations where precision is more important
-          
-          4. **Overlap Strategies**
-             - Use `async_finish=True` with appropriate event management
-             - Use hook-based background communication for low-latency mode:
-               ```python
-               recv_x, recv_count, handle, event, hook = buffer.low_latency_dispatch(...)
-               # Do computation
-               hook()  # Finalize receiving
-               ```
-          """)
+# Print periodic performance reports
+if len(monitor.records) > 0 and len(monitor.records) % 100 == 0:
+  print(generate_performance_report())
+      """)
+else:
+  st.info("Run the Log Analysis or Communication Benchmark first to get personalized recommendations")
 
-      with st.expander("Load Balancing"):
-          st.markdown("""
-          ### Expert Load Balancing
-          
-          1. **Capacity-Based Routing**
+  # General recommendations
+  st.markdown('<h2 class="section-header">General Optimization Guidelines</h2>', unsafe_allow_html=True)
 
+  with st.expander("Buffer Configuration"):
+      st.markdown("""
+      ### Optimal Buffer Configuration
+
+      1. **SM Allocation**
+         - Use `Buffer.set_num_sms(N)` to control GPU resources for communication
+         - For H100 GPUs, values between 20-28 often work well
+         - Adjust based on your specific workload needs
+
+      2. **Buffer Sizing**
+         - Use the sizing hint functions to properly size buffers:
+           ```python
+           num_nvl_bytes = config.get_nvl_buffer_size_hint(hidden_size, group.size())
+           num_rdma_bytes = config.get_rdma_buffer_size_hint(hidden_size, group.size())
+           ```
+         - For low-latency mode, use:
+           ```python
+           rdma_size = Buffer.get_low_latency_rdma_size_hint(
+               num_max_dispatch_tokens_per_rank, hidden, group.size(), num_experts
+           )
+           ```
+
+      3. **Expert Alignment**
+         - Use the `expert_alignment` parameter to optimize memory access patterns
+         - Typically should be set to a multiple of 8 or 16
+      """)
+
+  with st.expander("Communication Optimizations"):
+      st.markdown("""
+      ### Communication Performance Tuning
+
+      1. **NVLink Optimization**
+         - Ensure GPUs within a node are directly connected via NVLink
+         - Check topology with `nvidia-smi topo -m`
+         - Place frequently communicating experts on the same node
+
+      2. **RDMA Tuning**
+         - Enable GPU Direct RDMA for best performance
+         - Set appropriate environment variables:
+           ```
+           NVSHMEM_IB_ENABLE_IBGDA=1
+           NVSHMEM_IBGDA_NIC_HANDLER=gpu
+           NVSHMEM_QP_DEPTH=1024
+           ```
+         - Use virtual lanes for traffic isolation: `NVSHMEM_IB_SL=<value>`
+
+      3. **Precision Controls**
+         - Use FP8 for dispatch operations to reduce bandwidth requirements
+         - Keep BF16 for combine operations where precision is more important
+
+      4. **Overlap Strategies**
+         - Use `async_finish=True` with appropriate event management
+         - Use hook-based background communication for low-latency mode:
+           ```python
+           recv_x, recv_count, handle, event, hook = buffer.low_latency_dispatch(...)
+           # Do computation
+           hook()  # Finalize receiving
+           ```
+      """)
+
+  with st.expander("Load Balancing"):
+      st.markdown("""
+      ### Expert Load Balancing
+
+      1. **Capacity-Based Routing**
+         - Implement auxiliary load balancing loss
+         - Consider capacity factors in router outputs
+         - Balance between expert specialization and load distribution
+
+      2. **Token Dropping Strategies**
+         - Drop tokens beyond expert capacity thresholds
+         - Implement priority-based dropping for less important tokens
+
+      3. **Expert Group Design**
+         - Group experts based on token pattern co-occurrence
+         - Consider hierarchical grouping to minimize cross-node communication
+
+      4. **Monitoring Load Distribution**
+         - Track `num_tokens_per_expert` distribution
+         - Check for outliers or consistently overloaded experts
+         - Adjust routing algorithms based on observed patterns
+      """)
+
+  with st.expander("Network Configuration"):
+      st.markdown("""
+      ### Network Fabric Optimization
+
+      1. **InfiniBand Configuration**
+         - Enable adaptive routing for better load distribution
+         - Set appropriate MTU size (typically 4096)
+         - Configure IB Queue Pair settings:
+           ```
+           NVSHMEM_IBGDA_NUM_RC_PER_PE=<num_local_experts>
+           ```
+
+      2. **Traffic Management**
+         - Use virtual lanes for isolation between workloads
+         - Set quality of service (QoS) for different traffic types
+         - Keep other network traffic separate from MoE communication
+
+      3. **NUMA Considerations**
+         - Be aware of PCIe domain topology and NUMA nodes
+         - Use CPU affinity settings that match GPU topology
+         - Consider process binding for optimal memory access
+      """)
