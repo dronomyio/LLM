@@ -743,24 +743,58 @@ def main():
         with col1:
             st.subheader("Block Size Impact")
             # Create scatterplot of block_m vs block_n colored by performance
-            block_fig = px.scatter(
-                df,
-                x='block_n',
-                y='block_m',
-                color='throughput_tflops',
-                size='throughput_tflops',
-                facet_col='m',
-                facet_col_wrap=2,
-                hover_data=['shape', 'num_stages', 'throughput_tflops'],
-                labels={
-                    'block_n': 'Block N Size',
-                    'block_m': 'Block M Size',
-                    'throughput_tflops': 'Throughput (TFLOPS)',
-                    'm': 'Matrix M Dimension'
-                },
-                title="Block Size Impact on Performance",
-                color_continuous_scale="viridis"
-            )
+            # Ensure we're only using numeric columns and handle any potential issues
+            plot_df = df.copy()
+            
+            # Make sure all columns are correct types
+            plot_df['block_n'] = pd.to_numeric(plot_df['block_n'], errors='coerce')
+            plot_df['block_m'] = pd.to_numeric(plot_df['block_m'], errors='coerce')
+            plot_df['throughput_tflops'] = pd.to_numeric(plot_df['throughput_tflops'], errors='coerce')
+            plot_df['m'] = pd.to_numeric(plot_df['m'], errors='coerce')
+            
+            # Remove any rows with NaN values
+            plot_df = plot_df.dropna(subset=['block_n', 'block_m', 'throughput_tflops', 'm'])
+            
+            # If we have too many unique m values, select just a few representative ones
+            if len(plot_df['m'].unique()) > 3:
+                representative_m = sorted(plot_df['m'].unique())[:3]  # Take first 3 values
+                plot_df = plot_df[plot_df['m'].isin(representative_m)]
+                
+            # Convert m to string for faceting
+            plot_df['m_str'] = plot_df['m'].astype(int).astype(str)
+            
+            # Create the plot with error handling
+            try:
+                block_fig = px.scatter(
+                    plot_df,
+                    x='block_n',
+                    y='block_m',
+                    color='throughput_tflops',
+                    size='throughput_tflops',
+                    facet_col='m_str',  # Use string version for faceting
+                    facet_col_wrap=2,
+                    hover_data=['shape', 'num_stages', 'throughput_tflops'],
+                    labels={
+                        'block_n': 'Block N Size',
+                        'block_m': 'Block M Size',
+                        'throughput_tflops': 'Throughput (TFLOPS)',
+                        'm_str': 'Matrix M Dimension'
+                    },
+                    title="Block Size Impact on Performance",
+                    color_continuous_scale="viridis"
+                )
+            except Exception as e:
+                st.warning(f"Could not create block size scatter plot. Using simplified version.")
+                # Fallback to a simpler version without faceting
+                block_fig = px.scatter(
+                    plot_df,
+                    x='block_n',
+                    y='block_m',
+                    color='throughput_tflops',
+                    hover_data=['shape', 'throughput_tflops'],
+                    title="Block Size Impact on Performance (Simplified)",
+                    color_continuous_scale="viridis"
+                )
             
             block_fig.update_layout(height=500)
             st.plotly_chart(block_fig, use_container_width=True)
