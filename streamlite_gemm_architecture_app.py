@@ -456,12 +456,13 @@ def plot_sass_optimization():
     ax1.spines['top'].set_visible(False)
     ax1.spines['right'].set_visible(False)
     
-    # Add annotation explaining the issue
-    ax1.annotate(
+    # Add annotation explaining the issue - use text instead of annotate to avoid compatibility issues
+    ax1.text(
+        0.5, -0.2, 
         "Register reuse causes stalls\ndue to result dependencies",
-        xy=(0.5, -0.2), xycoords='axes fraction',
-        boxcoords="offset points", box_alignment=(0.5, 0.5),
-        pad=0.5, bbox=dict(boxstyle="round,pad=0.5", facecolor='white', alpha=0.7)
+        transform=ax1.transAxes,
+        ha='center', va='center',
+        bbox=dict(boxstyle="round,pad=0.5", facecolor='white', alpha=0.7)
     )
     
     # Second subplot: After optimization
@@ -500,12 +501,13 @@ def plot_sass_optimization():
     ax2.spines['top'].set_visible(False)
     ax2.spines['right'].set_visible(False)
     
-    # Add annotation explaining the optimization
-    ax2.annotate(
+    # Add annotation explaining the optimization - use text instead of annotate
+    ax2.text(
+        0.5, -0.2, 
         "Interleaved FFMAs and FADDs\nfor better instruction-level parallelism",
-        xy=(0.5, -0.2), xycoords='axes fraction',
-        boxcoords="offset points", box_alignment=(0.5, 0.5),
-        pad=0.5, bbox=dict(boxstyle="round,pad=0.5", facecolor='white', alpha=0.7)
+        transform=ax2.transAxes,
+        ha='center', va='center',
+        bbox=dict(boxstyle="round,pad=0.5", facecolor='white', alpha=0.7)
     )
     
     # Add overall explanation
