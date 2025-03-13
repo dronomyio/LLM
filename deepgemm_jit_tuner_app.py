@@ -158,11 +158,26 @@ def load_data(use_mock=True):
 
 def plot_tuning_heatmap(df, shape_key, x_param, y_param, show_best=True):
     """Create a heatmap showing parameter tuning impact"""
-    # Filter for the selected shape
-    m, n, k = [int(x) for x in shape_key.split(',')]
-    shape_df = df[(df['m'] == m) & (df['n'] == n) & (df['k'] == k)]
-    
-    if shape_df.empty:
+    # Parse the shape string more robustly
+    try:
+        # Extract numbers using regex
+        import re
+        numbers = re.findall(r'\d+', shape_key)
+        
+        # Make sure we have at least 3 numbers
+        if len(numbers) >= 3:
+            m, n, k = [int(numbers[i]) for i in range(3)]
+        else:
+            # Not enough numbers found
+            return None
+            
+        # Filter for the selected shape
+        shape_df = df[(df['m'] == m) & (df['n'] == n) & (df['k'] == k)]
+        
+        if shape_df.empty:
+            return None
+    except Exception:
+        # Any error in parsing, return None
         return None
     
     # Pivot to create heatmap data
@@ -282,11 +297,26 @@ def plot_parameter_importance(df):
 
 def plot_tuning_trace(df, shape_key):
     """Plot the performance of different configurations in tuning order"""
-    # Filter for the selected shape
-    m, n, k = [int(x) for x in shape_key.split(',')]
-    shape_df = df[(df['m'] == m) & (df['n'] == n) & (df['k'] == k)]
-    
-    if shape_df.empty:
+    # Parse the shape string more robustly
+    try:
+        # Extract numbers using regex
+        import re
+        numbers = re.findall(r'\d+', shape_key)
+        
+        # Make sure we have at least 3 numbers
+        if len(numbers) >= 3:
+            m, n, k = [int(numbers[i]) for i in range(3)]
+        else:
+            # Not enough numbers found
+            return None
+            
+        # Filter for the selected shape
+        shape_df = df[(df['m'] == m) & (df['n'] == n) & (df['k'] == k)]
+        
+        if shape_df.empty:
+            return None
+    except Exception:
+        # Any error in parsing, return None
         return None
     
     # Sort by throughput to simulate tuning process
@@ -375,11 +405,26 @@ def plot_tuning_trace(df, shape_key):
 
 def plot_smem_vs_performance(df, shape_key):
     """Plot relationship between shared memory size and performance"""
-    # Filter for the selected shape
-    m, n, k = [int(x) for x in shape_key.split(',')]
-    shape_df = df[(df['m'] == m) & (df['n'] == n) & (df['k'] == k)]
-    
-    if shape_df.empty:
+    # Parse the shape string more robustly
+    try:
+        # Extract numbers using regex
+        import re
+        numbers = re.findall(r'\d+', shape_key)
+        
+        # Make sure we have at least 3 numbers
+        if len(numbers) >= 3:
+            m, n, k = [int(numbers[i]) for i in range(3)]
+        else:
+            # Not enough numbers found
+            return None
+            
+        # Filter for the selected shape
+        shape_df = df[(df['m'] == m) & (df['n'] == n) & (df['k'] == k)]
+        
+        if shape_df.empty:
+            return None
+    except Exception:
+        # Any error in parsing, return None
         return None
     
     # Create scatter plot
@@ -432,11 +477,26 @@ def plot_smem_vs_performance(df, shape_key):
 
 def plot_waves_vs_performance(df, shape_key):
     """Plot relationship between wave count, occupancy and performance"""
-    # Filter for the selected shape
-    m, n, k = [int(x) for x in shape_key.split(',')]
-    shape_df = df[(df['m'] == m) & (df['n'] == n) & (df['k'] == k)]
-    
-    if shape_df.empty:
+    # Parse the shape string more robustly
+    try:
+        # Extract numbers using regex
+        import re
+        numbers = re.findall(r'\d+', shape_key)
+        
+        # Make sure we have at least 3 numbers
+        if len(numbers) >= 3:
+            m, n, k = [int(numbers[i]) for i in range(3)]
+        else:
+            # Not enough numbers found
+            return None
+            
+        # Filter for the selected shape
+        shape_df = df[(df['m'] == m) & (df['n'] == n) & (df['k'] == k)]
+        
+        if shape_df.empty:
+            return None
+    except Exception:
+        # Any error in parsing, return None
         return None
     
     # Add occupancy metric (last wave utilization as percentage)
