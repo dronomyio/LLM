@@ -838,7 +838,25 @@ def main():
         selected_shape = st.selectbox("Select Matrix Shape", shapes)
         
         if selected_shape:
-            m, n, k = [int(x) for x in selected_shape.split(',')]
+            # Parse the shape more safely - handle various formats
+            try:
+                # Try to extract m, n, k from the shape string
+                import re
+                
+                # Extract numbers from the shape string
+                numbers = re.findall(r'\d+', selected_shape)
+                
+                # Make sure we found at least 3 numbers
+                if len(numbers) >= 3:
+                    m, n, k = [int(numbers[i]) for i in range(3)]
+                else:
+                    # If we can't extract 3 numbers, use placeholder values
+                    m, n, k = 128, 128, 128
+                    st.warning(f"Could not parse shape values from '{selected_shape}'. Using default values.")
+            except Exception as e:
+                # Fallback to default values if parsing fails
+                m, n, k = 128, 128, 128
+                st.warning(f"Error parsing shape: {selected_shape}. Using default values.")
             
             # Show shape details
             st.markdown(f"""
@@ -920,10 +938,25 @@ def main():
         selected_shape = st.selectbox("Select Shape for Tuning Trace", shapes, key="tuning_trace_shape")
         
         if selected_shape:
-            # Show tuning trace
-            tuning_trace_fig = plot_tuning_trace(df, selected_shape)
-            if tuning_trace_fig:
-                st.plotly_chart(tuning_trace_fig, use_container_width=True)
+            try:
+                # Parse shape with regex before passing to plot function
+                import re
+                numbers = re.findall(r'\d+', selected_shape)
+                if len(numbers) >= 3:
+                    # Create a standardized shape key
+                    parsed_shape = f"m={numbers[0]}, n={numbers[1]}, k={numbers[2]}"
+                    # Show tuning trace with the parsed shape
+                    tuning_trace_fig = plot_tuning_trace(df, parsed_shape)
+                    if tuning_trace_fig:
+                        st.plotly_chart(tuning_trace_fig, use_container_width=True)
+                    else:
+                        st.warning(f"No tuning data available for shape: {selected_shape}")
+                else:
+                    st.warning(f"Could not parse shape values from '{selected_shape}'.")
+            except Exception as e:
+                st.error(f"Error generating tuning trace: {str(e)}")
+                # Provide a fallback visualization or message
+                st.info("Try selecting a different shape or check the data format.")
             
             st.markdown("""
             The chart above shows the progression of the tuning process, with each point representing
