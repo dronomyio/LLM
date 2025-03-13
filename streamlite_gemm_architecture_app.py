@@ -567,7 +567,67 @@ def main():
         Select a topic from the sidebar to explore each concept in detail.
         """)
         
-        st.image("figures/design.png", caption="DeepGEMM Design Overview", use_column_width=True)
+        # Try to load the design.png image, with fallback if it doesn't exist
+        import os
+        if os.path.exists("figures/design.png"):
+            st.image("figures/design.png", caption="DeepGEMM Design Overview", use_column_width=True)
+        else:
+            st.info("""
+            The DeepGEMM design overview image is not available. 
+            
+            This would typically show a diagram of the architecture with its key components:
+            - The persistent block scheduling system
+            - Tensor Memory Accelerator (TMA) integration
+            - Software pipeline design
+            - Warp specialization
+            - Memory hierarchy
+            """)
+            
+            # Create a simple placeholder diagram with matplotlib
+            import matplotlib.pyplot as plt
+            import matplotlib.patches as patches
+            
+            fig, ax = plt.subplots(figsize=(10, 6))
+            
+            # Create placeholder blocks for architecture components
+            components = [
+                {'name': 'Tensor Memory\nAccelerator (TMA)', 'color': 'orange', 'position': (0.1, 0.6, 0.35, 0.25)},
+                {'name': 'Warp\nSpecialization', 'color': 'lightblue', 'position': (0.55, 0.6, 0.35, 0.25)},
+                {'name': 'Software Pipeline', 'color': 'lightgreen', 'position': (0.1, 0.25, 0.35, 0.25)},
+                {'name': 'SASS\nOptimization', 'color': 'lightpink', 'position': (0.55, 0.25, 0.35, 0.25)},
+                {'name': 'Persistent Block Scheduling', 'color': 'lightyellow', 'position': (0.25, 0.05, 0.5, 0.1)}
+            ]
+            
+            # Add the components to the plot
+            for comp in components:
+                rect = patches.Rectangle(
+                    (comp['position'][0], comp['position'][1]),
+                    comp['position'][2], comp['position'][3],
+                    linewidth=2, edgecolor='black', facecolor=comp['color'], alpha=0.8
+                )
+                ax.add_patch(rect)
+                ax.text(
+                    comp['position'][0] + comp['position'][2]/2,
+                    comp['position'][1] + comp['position'][3]/2,
+                    comp['name'],
+                    ha='center', va='center', fontweight='bold'
+                )
+            
+            # Add connecting lines
+            ax.plot([0.3, 0.3], [0.15, 0.25], 'k-', linewidth=1.5)
+            ax.plot([0.7, 0.7], [0.15, 0.25], 'k-', linewidth=1.5)
+            ax.plot([0.3, 0.3], [0.5, 0.6], 'k-', linewidth=1.5)
+            ax.plot([0.7, 0.7], [0.5, 0.6], 'k-', linewidth=1.5)
+            
+            # Add title
+            ax.set_title('DeepGEMM Architecture (Placeholder Diagram)', fontsize=14)
+            
+            # Set limits and remove axes
+            ax.set_xlim(0, 1)
+            ax.set_ylim(0, 1)
+            ax.axis('off')
+            
+            st.pyplot(fig)
         
     elif topic == "Block Scheduling":
         st.write("""
