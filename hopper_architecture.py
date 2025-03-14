@@ -8,17 +8,21 @@ def draw_hopper_architecture():
     
     # Basic colors
     colors = {
-        'sm': '#4472C4',          # Streaming Multiprocessor
-        'l2': '#70AD47',          # L2 Cache
-        'tensor_core': '#ED7D31', # Tensor Core
-        'tma': '#FFC000',         # Tensor Memory Accelerator
-        'shared_mem': '#5B9BD5',  # Shared Memory
-        'hbm': '#A5A5A5',         # HBM Memory
-        'warp': '#9E480E',        # Warp Scheduler
-        'dispatch': '#C00000',    # Dispatch Units
-        'reg_file': '#8064A2',    # Register File
-        'bg': '#F2F2F2',          # Background
-        'border': '#404040'       # Borders
+          'sm': '#4472C4',          # Streaming Multiprocessor
+          'l2': '#70AD47',          # L2 Cache
+          'tensor_core': '#ED7D31', # Tensor Core
+          'Tensor Core': '#ED7D31', # Tensor Core (alternative key)
+          'tma': '#FFC000',         # Tensor Memory Accelerator
+          'TMA': '#FFC000',         # Tensor Memory Accelerator (alternative key)
+          'shared_mem': '#5B9BD5',  # Shared Memory
+          'Shared Mem': '#5B9BD5',  # Shared Memory (alternative key)
+          'hbm': '#A5A5A5',         # HBM Memory
+          'warp': '#9E480E',        # Warp Scheduler
+          'Warp': '#9E480E',        # Warp Scheduler (alternative key)
+          'dispatch': '#C00000',    # Dispatch Units
+          'reg_file': '#8064A2',    # Register File
+          'bg': '#F2F2F2',          # Background
+
     }
     
     # Set background color
