@@ -1,5 +1,7 @@
 import streamlit as st
-import graphviz
+import matplotlib.pyplot as plt
+import networkx as nx
+from matplotlib.colors import to_rgba
 
 st.title('PX4 Firmware Startup Flow')
 
@@ -9,38 +11,99 @@ tab1, tab2 = st.tabs(['NuttX (Hardware)', 'POSIX (Simulation)'])
 with tab1:
     st.header('NuttX Platform Startup Flow')
     
-    # Create a graphviz diagram for NuttX
-    nuttx_dot = graphviz.Digraph()
-    nuttx_dot.attr(rankdir='TB')
-    
-    # Add nodes
-    nuttx_dot.node('bootloader', 'Bootloader (verifies firmware)', style='filled', fillcolor='lightblue')
-    nuttx_dot.node('hw_init', 'Hardware Initialization', style='filled', fillcolor='lightblue')
-    nuttx_dot.node('px4_init', 'px4_platform_init()', style='filled', fillcolor='lightgreen')
-    nuttx_dot.node('cpp_init', 'C++ Constructors', style='filled', fillcolor='lightgreen')
-    nuttx_dot.node('hrt_init', 'HRT (High-Resolution Timer)', style='filled', fillcolor='lightgreen')
-    nuttx_dot.node('param_init', 'Parameter System', style='filled', fillcolor='orange')
-    nuttx_dot.node('uorb_init', 'uORB Messaging', style='filled', fillcolor='orange')
-    nuttx_dot.node('work_queues', 'Work Queues', style='filled', fillcolor='orange')
-    nuttx_dot.node('rcs', 'rcS Script Execution', style='filled', fillcolor='red')
-    nuttx_dot.node('sensors', 'Sensor Init', style='filled', fillcolor='yellow')
-    nuttx_dot.node('estimators', 'EKF2 & Estimators', style='filled', fillcolor='yellow')
-    nuttx_dot.node('apps', 'Vehicle Apps', style='filled', fillcolor='pink')
-    
-    # Add edges
-    nuttx_dot.edge('bootloader', 'hw_init')
-    nuttx_dot.edge('hw_init', 'px4_init')
-    nuttx_dot.edge('px4_init', 'cpp_init')
-    nuttx_dot.edge('cpp_init', 'hrt_init')
-    nuttx_dot.edge('hrt_init', 'param_init')
-    nuttx_dot.edge('param_init', 'uorb_init')
-    nuttx_dot.edge('uorb_init', 'work_queues')
-    nuttx_dot.edge('work_queues', 'rcs')
-    nuttx_dot.edge('rcs', 'sensors')
-    nuttx_dot.edge('sensors', 'estimators')
-    nuttx_dot.edge('estimators', 'apps')
-    
-    st.graphviz_chart(nuttx_dot)
+    # Create a function to make a directed graph with matplotlib instead of graphviz
+    def create_nuttx_graph():
+        G = nx.DiGraph()
+        
+        # Add nodes with positions
+        nodes = [
+            ('bootloader', 'Bootloader (verifies firmware)'),
+            ('hw_init', 'Hardware Initialization'),
+            ('px4_init', 'px4_platform_init()'),
+            ('cpp_init', 'C++ Constructors'),
+            ('hrt_init', 'HRT (High-Resolution Timer)'),
+            ('param_init', 'Parameter System'),
+            ('uorb_init', 'uORB Messaging'),
+            ('work_queues', 'Work Queues'),
+            ('rcs', 'rcS Script Execution'),
+            ('sensors', 'Sensor Init'),
+            ('estimators', 'EKF2 & Estimators'),
+            ('apps', 'Vehicle Apps')
+        ]
+        
+        # Define node positions (x, y)
+        pos = {
+            'bootloader': (0, 11),
+            'hw_init': (0, 10),
+            'px4_init': (0, 9),
+            'cpp_init': (0, 8),
+            'hrt_init': (0, 7),
+            'param_init': (0, 6),
+            'uorb_init': (0, 5),
+            'work_queues': (0, 4),
+            'rcs': (0, 3),
+            'sensors': (0, 2),
+            'estimators': (0, 1),
+            'apps': (0, 0)
+        }
+        
+        # Add nodes to graph
+        for node_id, node_label in nodes:
+            G.add_node(node_id, label=node_label)
+        
+        # Add edges
+        edges = [
+            ('bootloader', 'hw_init'),
+            ('hw_init', 'px4_init'),
+            ('px4_init', 'cpp_init'),
+            ('cpp_init', 'hrt_init'),
+            ('hrt_init', 'param_init'),
+            ('param_init', 'uorb_init'),
+            ('uorb_init', 'work_queues'),
+            ('work_queues', 'rcs'),
+            ('rcs', 'sensors'),
+            ('sensors', 'estimators'),
+            ('estimators', 'apps')
+        ]
+        G.add_edges_from(edges)
+        
+        # Create figure and draw
+        plt.figure(figsize=(10, 12))
+        
+        # Define node colors
+        node_colors = {
+            'bootloader': 'lightblue',
+            'hw_init': 'lightblue',
+            'px4_init': 'lightgreen',
+            'cpp_init': 'lightgreen',
+            'hrt_init': 'lightgreen',
+            'param_init': 'orange',
+            'uorb_init': 'orange',
+            'work_queues': 'orange',
+            'rcs': 'red',
+            'sensors': 'yellow',
+            'estimators': 'yellow',
+            'apps': 'pink'
+        }
+        
+        # Extract colors for drawing
+        colors = [node_colors[node] for node in G.nodes()]
+        
+        # Draw the graph
+        nx.draw(G, pos, with_labels=False, node_color=colors, node_size=2000, arrows=True, 
+                arrowstyle='->', arrowsize=20, edge_color='gray')
+        
+        # Draw labels with a white background for visibility
+        for node, (x, y) in pos.items():
+            plt.text(x, y, G.nodes[node]['label'], fontsize=9, ha='center', va='center',
+                    bbox=dict(facecolor='white', alpha=0.7, boxstyle='round,pad=0.5'))
+        
+        plt.axis('off')
+        plt.tight_layout()
+        return plt
+
+    # Display the plot
+    st.pyplot(create_nuttx_graph().gcf())
     
     # Add explanations
     st.subheader('NuttX Startup Process')
@@ -62,32 +125,87 @@ with tab1:
 with tab2:
     st.header('POSIX/SITL Platform Startup Flow')
     
-    # Create a graphviz diagram for POSIX
-    posix_dot = graphviz.Digraph()
-    posix_dot.attr(rankdir='TB')
-    
-    # Add nodes
-    posix_dot.node('main', 'main() in platforms/posix/src/px4/common/main.cpp', style='filled', fillcolor='lightblue')
-    posix_dot.node('args', 'Parse Command Line Arguments', style='filled', fillcolor='lightblue')
-    posix_dot.node('dirs', 'Create Directories & Symlinks', style='filled', fillcolor='lightgreen')
-    posix_dot.node('px4_init_once', 'px4::init_once()', style='filled', fillcolor='lightgreen')
-    posix_dot.node('px4_init', 'px4::init()', style='filled', fillcolor='lightgreen')
-    posix_dot.node('daemon', 'Start Daemon Process', style='filled', fillcolor='orange')
-    posix_dot.node('rcs_posix', 'rcS Script (POSIX version)', style='filled', fillcolor='red')
-    posix_dot.node('sim', 'Start Simulator', style='filled', fillcolor='yellow')
-    posix_dot.node('modules', 'Start PX4 Modules', style='filled', fillcolor='pink')
-    
-    # Add edges
-    posix_dot.edge('main', 'args')
-    posix_dot.edge('args', 'dirs')
-    posix_dot.edge('dirs', 'px4_init_once')
-    posix_dot.edge('px4_init_once', 'px4_init')
-    posix_dot.edge('px4_init', 'daemon')
-    posix_dot.edge('daemon', 'rcs_posix')
-    posix_dot.edge('rcs_posix', 'sim')
-    posix_dot.edge('sim', 'modules')
-    
-    st.graphviz_chart(posix_dot)
+    # Create a function to make a directed graph with matplotlib for POSIX
+    def create_posix_graph():
+        G = nx.DiGraph()
+        
+        # Add nodes with positions
+        nodes = [
+            ('main', 'main() in platforms/posix'),
+            ('args', 'Parse Command Line Arguments'),
+            ('dirs', 'Create Directories & Symlinks'),
+            ('px4_init_once', 'px4::init_once()'),
+            ('px4_init', 'px4::init()'),
+            ('daemon', 'Start Daemon Process'),
+            ('rcs_posix', 'rcS Script (POSIX version)'),
+            ('sim', 'Start Simulator'),
+            ('modules', 'Start PX4 Modules')
+        ]
+        
+        # Define node positions (x, y)
+        pos = {
+            'main': (0, 8),
+            'args': (0, 7),
+            'dirs': (0, 6),
+            'px4_init_once': (0, 5),
+            'px4_init': (0, 4),
+            'daemon': (0, 3),
+            'rcs_posix': (0, 2),
+            'sim': (0, 1),
+            'modules': (0, 0)
+        }
+        
+        # Add nodes to graph
+        for node_id, node_label in nodes:
+            G.add_node(node_id, label=node_label)
+        
+        # Add edges
+        edges = [
+            ('main', 'args'),
+            ('args', 'dirs'),
+            ('dirs', 'px4_init_once'),
+            ('px4_init_once', 'px4_init'),
+            ('px4_init', 'daemon'),
+            ('daemon', 'rcs_posix'),
+            ('rcs_posix', 'sim'),
+            ('sim', 'modules')
+        ]
+        G.add_edges_from(edges)
+        
+        # Create figure and draw
+        plt.figure(figsize=(10, 10))
+        
+        # Define node colors
+        node_colors = {
+            'main': 'lightblue',
+            'args': 'lightblue',
+            'dirs': 'lightgreen',
+            'px4_init_once': 'lightgreen',
+            'px4_init': 'lightgreen',
+            'daemon': 'orange',
+            'rcs_posix': 'red',
+            'sim': 'yellow',
+            'modules': 'pink'
+        }
+        
+        # Extract colors for drawing
+        colors = [node_colors[node] for node in G.nodes()]
+        
+        # Draw the graph
+        nx.draw(G, pos, with_labels=False, node_color=colors, node_size=2000, arrows=True, 
+                arrowstyle='->', arrowsize=20, edge_color='gray')
+        
+        # Draw labels with a white background for visibility
+        for node, (x, y) in pos.items():
+            plt.text(x, y, G.nodes[node]['label'], fontsize=9, ha='center', va='center',
+                    bbox=dict(facecolor='white', alpha=0.7, boxstyle='round,pad=0.5'))
+        
+        plt.axis('off')
+        plt.tight_layout()
+        return plt
+
+    # Display the plot
+    st.pyplot(create_posix_graph().gcf())
     
     # Add explanations
     st.subheader('POSIX/SITL Startup Process')
